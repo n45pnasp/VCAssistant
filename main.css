@@ -1,0 +1,319 @@
+/* ===== GLOBAL STYLES ===== */
+body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  color: #fff;
+  font-family: 'Roboto', sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+#videos {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #000;
+}
+
+#remoteVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+#localVideo {
+  position: absolute;
+  bottom: 120px;
+  right: 20px;
+  width: 25%;
+  max-width: 180px;
+  height: auto;
+  aspect-ratio: 9/16;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  z-index: 10;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ===== WATERMARK LOGO ===== */
+#watermark-logo {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5vw;
+  min-width: 50px;
+  max-width: 200px;
+  height: auto;
+  opacity: 0.85;
+  z-index: 999;
+  pointer-events: none;
+}
+
+/* ===== CONTROL BUTTONS ===== */
+#buttons {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  z-index: 100;
+  padding: 12px 20px;
+  background: rgba(30, 30, 30, 0.5);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+}
+
+#buttons .mdc-button {
+  min-width: 0;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+#buttons .mdc-button:disabled {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+#hangupBtn {
+  background: #f44336 !important;
+}
+
+#hangupBtn:not(:disabled) {
+  animation: pulse-red 1.5s infinite;
+}
+
+.mdc-button__label {
+  display: none;
+}
+
+.mdc-button__icon {
+  margin: 0 !important;
+  font-size: 24px;
+}
+
+/* ===== ROOM STATUS ===== */
+#currentRoom {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #00ff00;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 100;
+}
+
+/* ===== NAME CALLEE STATUS ===== */
+#calleeNameLabel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 100;
+  display: none;
+}
+
+/* ===== POP UP NAME CALLEE (Dark iOS Style Refined) ===== */
+
+/* Modal Background */
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Modal Content */
+.modal-content {
+  background-color: #1c1c1e;
+  color: white;
+  padding: 24px 20px 0;
+  border-radius: 13px;
+  width: 90%;
+  max-width: 250px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  animation: fadeIn 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Heading */
+.modal-content h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* Description */
+.modal-content p {
+  font-size: 13px;
+  color: #c7c7cc;
+  margin-bottom: 18px;
+}
+
+/* Input */
+#calleeNameInput {
+  padding: 10px 14px;
+  font-size: 15px;
+  width: 100%;
+  margin-bottom: 20px;
+  border: 1px solid #3a3a3c;
+  border-radius: 10px;
+  background-color: #2c2c2e;
+  color: white;
+  outline: none;
+  box-sizing: border-box;
+}
+
+/* Buttons Container */
+.modal-buttons {
+  display: flex;
+  border-top: 1px solid #2c2c2e;
+  height: 45px;
+}
+
+/* Button Base Style */
+.modal-button {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+  color: #0a84ff;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-right: 1px solid #2c2c2e;
+  transition: background-color 0.2s ease;
+  line-height: 45px;
+}
+
+/* Last button no border-right */
+.modal-button:last-child {
+  border-right: none;
+}
+
+/* Hover Effect */
+.modal-button:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+
+
+
+
+/* ===== LOADING OVERLAY ===== */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 5px solid #4CAF50;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+#startCallBtn {
+  display: none;
+}
+
+.loading-text {
+  margin-top: 15px;
+  color: white;
+  font-size: 16px;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  #localVideo {
+    width: 30%;
+    max-width: 120px;
+    bottom: 100px;
+    right: 15px;
+  }
+
+  #buttons {
+    padding: 10px 16px;
+  }
+
+  #buttons .mdc-button {
+    width: 45px;
+    height: 45px;
+  }
+
+  #watermark-logo {
+    width: 25vw;
+    top: 10px;
+  }
+}
+
+@media (min-width: 1200px) {
+  #localVideo {
+    width: 20%;
+    max-width: 200px;
+    right: 30px;
+  }
+
+  #watermark-logo {
+    max-width: 200px;
+  }
+}

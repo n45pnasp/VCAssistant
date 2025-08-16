@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Service BWX</title>
+
+  <!-- Material Design -->
+  <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="./main.css" />
+</head>
+<body>
+
+  <!-- Tombol kontrol -->
+  <div id="buttons">
+    <!-- Callee tidak butuh start button, biarkan tersembunyi -->
+    <button class="mdc-button mdc-button--raised" id="startCallBtn" style="display:none;">
+      <i class="material-icons mdc-button__icon" aria-hidden="true">call</i>
+      <span class="mdc-button__label">Mulai Panggilan</span>
+    </button>
+
+    <!-- Hangup -->
+    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn">
+      <i class="material-icons mdc-button__icon" aria-hidden="true">call_end</i>
+    </button>
+  </div>
+
+  <!-- Status -->
+  <div><span id="currentRoom"></span></div>
+
+  <!-- Video -->
+  <div id="videos">
+    <video id="localVideo" muted autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+    <img id="watermark-logo" src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney" />
+  </div>
+
+  <!-- Overlay Loading -->
+  <div id="loading" class="loading-overlay" style="display:none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Connecting...</div>
+  </div>
+
+  <!-- Modal nama callee -->
+  <div id="nameModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h2>Masukkan Nama Anda</h2>
+      <p>Nama diperlukan untuk bergabung ke dalam panggilan.</p>
+      <input type="text" id="calleeNameInput" placeholder="Nama..." />
+      <div class="modal-buttons">
+        <button class="modal-button" id="cancelBtn">Batal</button>
+        <button class="modal-button" id="joinBtn">Sambungkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script utama -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
