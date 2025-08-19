@@ -4,7 +4,10 @@ import {
   getFirestore, doc, setDoc, getDoc, deleteDoc,
   collection, addDoc, onSnapshot, getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+import { 
+  getAuth, signInAnonymously, onAuthStateChanged,
+  setPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence
+} from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAjqMqmKUDPWHkv19Dig7PnUpHMzNf9J1A",
@@ -20,8 +23,36 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// Login anonim segera (agar rules Firestore bisa pakai request.auth != null)
-signInAnonymously(auth).catch(err => console.error("Anon login gagal:", err));
+// === [PERBAIKAN] Persistence fallback + tunggu anon login selesai ===
+async function preparePersistence() {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch {
+    try { await setPersistence(auth, browserSessionPersistence); }
+    catch { await setPersistence(auth, inMemoryPersistence); }
+  }
+}
+
+async function ensureAnonLogin() {
+  await preparePersistence();
+  await signInAnonymously(auth);
+}
+
+function waitForUser(timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      unsub();
+      reject(new Error("Auth timeout"));
+    }, timeoutMs);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        clearTimeout(timer);
+        unsub();
+        resolve(user);
+      }
+    });
+  });
+}
 
 // ==================== KONFIGURASI HALAMAN (RELATIF) ====================
 const PAGES = {
@@ -39,20 +70,21 @@ let wasCalleeConnected = false;
 const ROOM_ID = (window.ROOM_ID || "cs-room"); // bisa di-overwrite dari HTML bila perlu
 
 // ==================== INIT ====================
-window.onload = () => {
-  onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      console.error("❌ Gagal mendapatkan sesi anon.");
-      alert("Tidak bisa login ke server. Silakan refresh.");
-      return;
-    }
+// [PERBAIKAN] Jangan alert saat user masih null. Tunggu sampai login berhasil.
+window.onload = async () => {
+  try {
+    await ensureAnonLogin();
+    const user = await waitForUser();
     console.log("✅ Anon login:", user.uid);
     initAfterAuth();
     // Mulai loop status panel begitu auth siap
     startStatusLoop();
     // Opsional: buka panel otomatis sekali saat halaman load
     setTimeout(()=>{ openPanel(); }, 600);
-  });
+  } catch (e) {
+    console.error("❌ Gagal login anonim:", e);
+    alert("Tidak bisa login ke server. Silakan refresh atau coba browser lain.");
+  }
 };
 
 async function initAfterAuth() {
