@@ -15,20 +15,21 @@
 </head>
 <body>
 
-  <!-- Label nama callee (diisi app.js) -->
-  <div id="calleeNameLabel" style="display:none;"></div>
-
   <!-- Tombol kontrol -->
   <div id="buttons">
+    <!-- Callee tidak butuh start button, biarkan tersembunyi -->
     <button class="mdc-button mdc-button--raised" id="startCallBtn" style="display:none;">
       <i class="material-icons mdc-button__icon" aria-hidden="true">call</i>
       <span class="mdc-button__label">Mulai Panggilan</span>
     </button>
-    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn" title="Akhiri panggilan">
+
+    <!-- Hangup -->
+    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn">
       <i class="material-icons mdc-button__icon" aria-hidden="true">call_end</i>
     </button>
   </div>
 
+  <!-- Status -->
   <div><span id="currentRoom"></span></div>
 
   <!-- Video -->
@@ -38,7 +39,7 @@
     <img id="watermark-logo" src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney" />
   </div>
 
-  <!-- Loading -->
+  <!-- Overlay Loading -->
   <div id="loading" class="loading-overlay" style="display:none;">
     <div class="loading-spinner"></div>
     <div class="loading-text">Connecting...</div>
@@ -57,7 +58,7 @@
     </div>
   </div>
 
-  <!-- <script>window.ROOM_ID = new URLSearchParams(location.search).get('room') || 'cs-room';</script> -->
+  <!-- Script utama -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
