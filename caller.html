@@ -89,6 +89,21 @@
 
     /* Minor tweak agar watermark tidak ketutup handle */
     #watermark-logo{ pointer-events: none; }
+
+    /* === Tambahan: tampilan daftar antrian === */
+    .queue-section{ margin-top:18px; }
+    .queue-section h4{
+      font-size:12px; color:var(--panel-muted); margin:4px 0 8px;
+      letter-spacing:.4px; text-transform:uppercase;
+    }
+    #queueList{ list-style:none; padding-left:0; margin:0; }
+    #queueList li{
+      background: rgba(255,255,255,.06);
+      border-radius:10px;
+      padding:8px 10px;
+      margin-bottom:8px;
+      font-size:14px;
+    }
   </style>
 </head>
 <body>
@@ -144,6 +159,13 @@
         <button id="closeRoomBtn" class="btn-danger">Tutup Koneksi</button>
       </div>
       <div class="note">Room & kandidat ICE akan dihapus dari Firestore.</div>
+
+      <!-- ===== Tambahan: DAFTAR ANTRIAN tampil di panel ===== -->
+      <div class="queue-section">
+        <h4>Antrian (real-time)</h4>
+        <ul id="queueList"><li>(Memuat antrian…)</li></ul>
+      </div>
+      <!-- ===== /Tambahan ===== -->
     </div>
   </aside>
 
@@ -154,4 +176,3 @@
   <script type="module" src="./app.js"></script>
 </body>
 </html>
-
