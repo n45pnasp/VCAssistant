@@ -3,7 +3,7 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import {
   getFirestore, doc, setDoc, getDoc, deleteDoc,
   collection, addDoc, onSnapshot, getDocs,
-  serverTimestamp, query, orderBy, where, limit as qLimit
+  serverTimestamp, query, orderBy
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 import {
   getAuth, signInAnonymously, onAuthStateChanged,
@@ -20,9 +20,9 @@ const firebaseConfig = {
   appId: "1:317019843909:web:2d5b2b2c9dd118e0ce622c"
 };
 
-// TURN Proxy (Cloudflare Worker)
-const TURN_PROXY = "https://wrangler.avsecbwx2018.workers.dev/"; // GANTI ke URL Worker kamu
-const TURN_SHARED_TOKEN = "N45p"; // kosongkan "" bila tidak pakai
+// TURN Proxy (Cloudflare Worker) – GANTI SESUAI punyamu
+const TURN_PROXY = "https://turn-proxy-xxxxx.yourname.workers.dev/turn";
+const TURN_SHARED_TOKEN = "N45p"; // "" jika tidak pakai
 
 // PAGES
 const PAGES = { thanks: "thanks.html", busy: "maaf.html" };
@@ -58,13 +58,12 @@ function waitForUser(timeoutMs = 8000) {
   });
 }
 
-// ==================== INIT (semua halaman) ====================
+// ==================== INIT ====================
 window.onload = async () => {
   try {
     await ensureAnonLogin();
     await waitForUser();
 
-    // Routing ringan berdasar halaman
     if (location.pathname.endsWith(PAGES.busy)) {
       initBusyPage().catch(console.error);
       return;
@@ -87,7 +86,6 @@ async function initAfterAuth() {
   if (!isCallerPage && startBtn) startBtn.remove();
   if (hangupBtn) hangupBtn.addEventListener("click", hangUp);
 
-  // cleanup callee candidates saat unload (callee)
   window.addEventListener("beforeunload", async () => {
     try { if (!isCaller) await deleteCalleeCandidates(); } catch {}
   });
@@ -95,34 +93,34 @@ async function initAfterAuth() {
   const rSnap = await getDoc(doc(db, "rooms", ROOM_ID));
 
   if (!rSnap.exists()) {
-    if (isCallerPage && startBtn) {
-      startBtn.style.display = "inline-block";
-      startBtn.disabled = false;
-      startBtn.addEventListener("click", startCall);
-    } else {
-      // Tidak ada room & bukan caller → arahkan ke busy (masuk antrian)
-      location.href = PAGES.busy;
-    }
+    // === PATCH: tampilkan notifikasi lama dulu ===
+    alert("Customer Service belum online. Anda akan diarahkan ke halaman antrian.");
+    location.href = PAGES.busy;
+    return;
   } else {
     const data = rSnap.data();
+
     if (isCallerPage && startBtn) { startBtn.style.display = "inline-block"; startBtn.disabled = true; }
 
-    // tampilkan timer bila ada sesi aktif
     attachTimerFromRoom(data);
 
     if (data?.offer && !data?.answer) {
-      // callee boleh join
       if (!isCallerPage) {
         const name = (sessionStorage.getItem("calleeName")) || await showNameInputModal();
         if (!name?.trim()) { alert("Nama wajib diisi."); return; }
         sessionStorage.setItem("calleeName", name);
-        startCall(name).catch(err=>{ console.error("Auto-join gagal:", err); alert("Gagal auto-join."); });
+        startCall(name).catch(err => {
+          console.error("Gagal auto-join:", err);
+          alert("Gagal auto-join. Silakan coba lagi.");
+        });
       }
     } else {
-      // sudah ada answer → sibuk
+      alert("Maaf, CS sedang melayani pelanggan lain.");
       location.href = PAGES.busy;
+      return;
     }
   }
+
   updateButtonStates();
 }
 
@@ -131,13 +129,11 @@ async function startCall(calleeNameFromInit = null) {
   try {
     showLoading(true);
 
-    // izin media (opsional)
     try {
       const camPerm = await navigator.permissions?.query?.({ name: "camera" });
       if (camPerm?.state === "denied") { alert("Izin kamera ditolak."); return; }
     } catch {}
 
-    // stream
     localStream  = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     remoteStream = new MediaStream();
     document.querySelector("#localVideo").srcObject = localStream;
@@ -177,9 +173,8 @@ async function startCall(calleeNameFromInit = null) {
       await peerConnection.setLocalDescription(offer);
       await setDoc(roomRef, { offer: { type: offer.type, sdp: offer.sdp }, status: "idle" }, { merge: true });
 
-      // dengar answer & tampil nama
-      onSnapshot(roomRef, snap => {
-        const data = snap.data();
+      onSnapshot(roomRef, snapshot => {
+        const data = snapshot.data();
         if (!peerConnection.currentRemoteDescription && data?.answer) {
           peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
         }
@@ -225,16 +220,15 @@ async function startCall(calleeNameFromInit = null) {
           status: "active"
         }, { merge: true });
 
-        // caller candidates
         const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
         onSnapshot(callerCandidatesRef, snap => {
           snap.docChanges().forEach(async ch => { if (ch.type === "added") await peerConnection.addIceCandidate(new RTCIceCandidate(ch.doc.data())); });
         });
 
-        // room dihapus oleh caller?
         onSnapshot(roomRef, s => { if (!s.exists()) cleanupAndRedirectCallee(); });
 
       } else {
+        alert("Maaf, CS sedang melayani pelanggan lain.");
         location.href = PAGES.busy;
       }
     }
@@ -265,7 +259,6 @@ function startCallTimer(startedMs, maxSec) {
     renderCallTimer(remain);
     if (remain <= 0) {
       stopCallTimer();
-      // auto hang up
       try { hangUp(); } catch {}
     }
   }, 1000);
@@ -336,7 +329,7 @@ async function deleteRoomIfCaller() {
     const [callerDocs, calleeDocs] = await Promise.all([ getDocs(callerCandidatesRef), getDocs(calleeCandidatesRef) ]);
     const allDocs = [...callerDocs.docs, ...calleeDocs.docs];
     await Promise.all(allDocs.map(d => deleteDoc(d.ref)));
-    await deleteDoc(roomRef); // queue subcollection TIDAK disentuh (tetap ada)
+    await deleteDoc(roomRef); // queue subcollection TETAP ada
     console.log("Room dihapus");
   } catch (e) { console.warn("Gagal hapus room:", e.message); }
 }
@@ -370,7 +363,6 @@ function showCalleeDisconnected() {
 function formatName(n){ return (n||"").toString().trim(); }
 
 // ==================== SLIDE PANEL EXISTING + QUEUE (caller) ====================
-// (kode panel asli tetap; ditambah render queue)
 const slidePanel    = document.getElementById('slidePanel');
 const slideHandle   = document.getElementById('slideHandle');
 const handleIcon    = document.getElementById('handleIcon');
@@ -381,7 +373,7 @@ const statusText    = document.getElementById('statusText');
 const lastChecked   = document.getElementById('lastCheckedText');
 const spinnerDots   = document.getElementById('spinnerDots');
 const closeRoomBtn  = document.getElementById('closeRoomBtn');
-const queueListEl   = document.getElementById('queueList');  // <ul> optional di slide caller
+const queueListEl   = document.getElementById('queueList');  // <ul> di slide caller
 
 function openPanel(){ if (!slidePanel) return; slidePanel.classList.add('open'); slidePanel.setAttribute('aria-hidden','false'); panelBackdrop?.classList.add('show'); if (handleIcon) handleIcon.textContent='chevron_right';}
 function closePanel(){ if (!slidePanel) return; slidePanel.classList.remove('open'); slidePanel.setAttribute('aria-hidden','true'); panelBackdrop?.classList.remove('show'); if (handleIcon) handleIcon.textContent='chevron_left';}
@@ -397,7 +389,7 @@ window.addEventListener('touchstart',(e)=>{ if(!slidePanel||slidePanel.classList
 window.addEventListener('touchmove',(e)=>{ if(!touching) return; const t=e.touches[0]; if((touchStartX - t.clientX) > 20){ touching=false; openPanel();}}, {passive:true});
 window.addEventListener('touchend',()=>{ touching=false; touchStartX=null; });
 
-// status loop (ditambah render queue)
+// status loop + render queue
 async function checkRoomStatus(){
   if (!statusText || !lastChecked) return;
   try{
@@ -414,7 +406,7 @@ async function checkRoomStatus(){
     statusText.textContent = msg;
     lastChecked.textContent = "Terakhir diperiksa: " + new Date().toLocaleTimeString();
 
-    // Render queue (top 10)
+    // Render queue (real-time snapshot cepat)
     if (queueListEl) {
       const qRef = collection(db, "rooms", ROOM_ID, "queue");
       const qSnap = await getDocs(query(qRef, orderBy("createdAt","asc")));
@@ -439,7 +431,6 @@ async function checkRoomStatus(){
 let statusTimer=null;
 function startStatusLoop(){ if(!statusText) return; checkRoomStatus(); if(statusTimer) clearInterval(statusTimer); statusTimer=setInterval(checkRoomStatus, 3000); }
 
-// panel action
 async function deleteRoomData(){
   if (spinnerDots) spinnerDots.style.display = 'flex';
   if (statusText)  statusText.textContent = "Menghapus data…";
@@ -452,8 +443,9 @@ closeRoomBtn?.addEventListener('click', deleteRoomData);
 
 // ==================== BUSY PAGE (maaf.html) ====================
 async function initBusyPage(){
-  // auth sudah ready
   const user = auth.currentUser;
+
+  // minta nama utk antrian (gunakan modal jika ada)
   const name = sessionStorage.getItem("queueName") || await askNameForQueue();
   sessionStorage.setItem("queueName", name);
 
@@ -475,11 +467,11 @@ async function initBusyPage(){
   const declineBtn   = byId("declineBtn");
   const modalCountdown = byId("offerCountdown");
 
-  // subscribe room (untuk countdown current call)
+  // subscribe room (untuk status & countdown)
   const roomDocRef = doc(db, "rooms", ROOM_ID);
   onSnapshot(roomDocRef, (snap)=>{
     if (!snap.exists()) {
-      callTimerEl.textContent = "Tidak ada panggilan aktif.";
+      callTimerEl.textContent = "Admin belum online.";
       return;
     }
     const d = snap.data();
@@ -487,41 +479,60 @@ async function initBusyPage(){
       const startedMs = d.startedAt.toMillis ? d.startedAt.toMillis() : Date.parse(d.startedAt);
       const maxSec = Number(d.maxSeconds || MAX_CALL_SECONDS);
       renderBusyCallCountdown(callTimerEl, startedMs, maxSec);
+    } else if (d?.offer && !d?.answer) {
+      callTimerEl.textContent = "CS siap. Menunggu pelanggan masuk…";
     } else {
       callTimerEl.textContent = "Panggilan belum terhubung.";
     }
   });
 
-  // subscribe queue (posisi + ETA)
+  // subscribe queue (posisi + ETA + penawaran masuk)
   const qRef = collection(db, "rooms", ROOM_ID, "queue");
   onSnapshot(query(qRef, orderBy("createdAt","asc")), async (snap)=>{
     const arr = [];
     snap.forEach(d => {
       const v = d.data();
-      if (!["skipped"].includes(v.status)) arr.push({ id:d.id, ...v });
+      if (!["skipped"].includes(v.status)) {
+        arr.push({ id:d.id, ...v });
+      }
     });
 
     const myIndex = arr.findIndex(x => x.id === user.uid);
     const position = myIndex >= 0 ? myIndex + 1 : "-";
-    posEl.textContent = `Anda antrian ke-${position}`;
+    posEl.textContent = position === "-" ? "Anda belum terdaftar di antrian" : `Anda antrian ke-${position}`;
 
-    // ETA: sisa panggilan + 15m * (orang di depan)
+    // Info room
     const r = await getDoc(roomDocRef);
-    let remain = 0;
-    if (r.exists() && r.data()?.startedAt && r.data()?.maxSeconds){
-      const startedMs = r.data().startedAt.toMillis ? r.data().startedAt.toMillis() : Date.parse(r.data().startedAt);
-      const maxSec = Number(r.data().maxSeconds || MAX_CALL_SECONDS);
-      const elapsed = Math.floor((Date.now() - startedMs)/1000);
-      remain = Math.max(0, maxSec - elapsed);
-    }
-    const ahead = Math.max(0, (position === "-") ? 0 : (position - 1));
-    const etaSec = remain + (ahead * MAX_CALL_SECONDS);
-    etaEl.textContent = `Estimasi waktu: ${formatMMSS(etaSec)}`;
+    const roomExists = r.exists();
+    const rd = r.data() || {};
+    const hasActiveCall = !!(rd?.startedAt && rd?.maxSeconds);
+    const hasOffer = !!(roomExists && rd?.offer && !rd?.answer);
 
-    // Notifikasi bila giliran & room tersedia (room doc tidak ada → CS idle)
-    const roomExists = (await getDoc(roomDocRef)).exists();
-    if (position === 1 && !roomExists) {
-      // tawaran masuk
+    // ETA
+    if (hasActiveCall) {
+      const startedMs = rd.startedAt.toMillis ? rd.startedAt.toMillis() : Date.parse(rd.startedAt);
+      const maxSec = Number(rd.maxSeconds || MAX_CALL_SECONDS);
+      const elapsed = Math.floor((Date.now() - startedMs)/1000);
+      const remain = Math.max(0, maxSec - elapsed);
+      const ahead = Math.max(0, (position === "-" ? 0 : position - 1));
+      const etaSec = remain + (ahead * MAX_CALL_SECONDS);
+      etaEl.textContent = `Estimasi waktu: ${formatMMSS(etaSec)}`;
+    } else if (hasOffer) {
+      if (position === 1) {
+        etaEl.textContent = `Estimasi waktu: 00:00 (CS sudah siap)`;
+      } else if (position !== "-") {
+        const ahead = Math.max(0, position - 1);
+        const etaSec = ahead * MAX_CALL_SECONDS;
+        etaEl.textContent = `Estimasi waktu: ~${formatMMSS(etaSec)}`;
+      } else {
+        etaEl.textContent = `Estimasi waktu: —`;
+      }
+    } else {
+      etaEl.textContent = `Menunggu admin online…`;
+    }
+
+    // Notifikasi penawaran (10 detik) ketika posisi #1 dan hasOffer
+    if (position === 1 && hasOffer) {
       let countdown = 10;
       modal.style.display = "flex";
       modalText.textContent = "Giliran Anda. Masuk sekarang?";
@@ -529,23 +540,28 @@ async function initBusyPage(){
 
       const t = setInterval(()=>{
         countdown--; modalCountdown.textContent = countdown;
-        if (countdown <= 0) { clearInterval(t); modal.style.display="none"; // hangus
-          // keluarkan dari antrian
+        if (countdown <= 0) {
+          clearInterval(t);
+          modal.style.display = "none";
+          // hangus → hapus dari antrian
           setDoc(myRef, { status:"skipped" }, { merge:true }).then(()=>deleteDoc(myRef));
         }
       }, 1000);
 
       acceptBtn.onclick = async ()=>{
-        clearInterval(t); modal.style.display="none";
+        clearInterval(t);
+        modal.style.display = "none";
         await setDoc(myRef, { status:"accepted", notiExpiresAt: serverTimestamp() }, { merge:true });
-        // arahkan ke halaman utama (callee akan join ketika CS membuka room/offer)
-        location.href = "./";
+        location.href = "./"; // kembali ke callee; auto-join
       };
+
       declineBtn.onclick = async ()=>{
-        clearInterval(t); modal.style.display="none";
+        clearInterval(t);
+        modal.style.display = "none";
         await setDoc(myRef, { status:"skipped" }, { merge:true });
         await deleteDoc(myRef);
       };
+
     } else {
       modal.style.display = "none";
     }
@@ -555,7 +571,6 @@ async function initBusyPage(){
 function renderBusyCallCountdown(el, startedMs, maxSec){
   const remain = Math.max(0, Math.floor(maxSec - (Date.now()-startedMs)/1000));
   el.textContent = `Sisa panggilan aktif: ${formatMMSS(remain)}`;
-  // update tiap detik
   if (!el._timer) {
     el._timer = setInterval(()=>{
       const r = Math.max(0, Math.floor(maxSec - (Date.now()-startedMs)/1000));
@@ -570,9 +585,7 @@ function formatMMSS(sec){
   return `${mm}:${ss}`;
 }
 function byId(id){ return document.getElementById(id); }
-
 async function askNameForQueue(){
-  // pakai modal existing jika ada, fallback prompt
   if (document.getElementById("nameModal")) {
     return await showNameInputModal();
   }
@@ -581,7 +594,7 @@ async function askNameForQueue(){
   return p.trim();
 }
 
-// ==================== EXISTING: monitorConnectionStatus ====================
+// ==================== MONITOR STATUS (kecil di halaman) ====================
 function monitorConnectionStatus() {
   const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
   const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
@@ -599,6 +612,7 @@ function monitorConnectionStatus() {
     if (isCaller) {
       if (!snapshot.empty) {
         if (el) el.textContent = "Terkoneksi";
+
         getDoc(doc(db, "rooms", ROOM_ID)).then((docSnap) => {
           if (docSnap.exists()) {
             const name = docSnap.data().calleeName;
@@ -609,6 +623,7 @@ function monitorConnectionStatus() {
             attachTimerFromRoom(docSnap.data());
           }
         });
+
         wasCalleeConnected = true;
       } else if (snapshot.empty && wasCalleeConnected) {
         showCalleeDisconnected(); wasCalleeConnected = false;
