@@ -21,7 +21,7 @@ const firebaseConfig = {
 };
 
 // TURN Proxy (Cloudflare Worker) – GANTI SESUAI punyamu
-const TURN_PROXY = "https://wrangler.avsecbwx2018.workers.dev";
+const TURN_PROXY = "https://turn-proxy-xxxxx.yourname.workers.dev/turn";
 const TURN_SHARED_TOKEN = "N45p"; // "" jika tidak pakai
 
 // PAGES
@@ -93,9 +93,8 @@ async function initAfterAuth() {
   const rSnap = await getDoc(doc(db, "rooms", ROOM_ID));
 
   if (!rSnap.exists()) {
-    // === BEHAVIOR BARU ===
+    // === Admin standalone ===
     if (isCallerPage) {
-      // Admin: tetap di halaman, tampilkan tombol Start
       if (startBtn) {
         startBtn.style.display = "inline-block";
         startBtn.disabled = false;
@@ -103,7 +102,6 @@ async function initAfterAuth() {
       }
       return;
     } else {
-      // Callee: arahkan ke halaman antrian
       alert("Customer Service belum online. Anda akan diarahkan ke halaman antrian.");
       location.href = PAGES.busy;
       return;
@@ -113,7 +111,6 @@ async function initAfterAuth() {
 
     if (isCallerPage && startBtn) {
       startBtn.style.display = "inline-block";
-      // Jika sudah ada offer/answer, tombol start dinonaktifkan
       startBtn.disabled = !!data.offer;
       if (!data.offer) startBtn.onclick = () => startCall();
     }
@@ -121,9 +118,12 @@ async function initAfterAuth() {
     attachTimerFromRoom(data);
 
     if (data?.offer && !data?.answer) {
-      // ada offer → callee boleh join
+      // ada offer → callee join
       if (!isCallerPage) {
-        const name = (sessionStorage.getItem("calleeName")) || await showNameInputModal();
+        const name =
+          sessionStorage.getItem("calleeName") ||
+          sessionStorage.getItem("queueName") ||
+          await showNameInputModal();
         if (!name?.trim()) { alert("Nama wajib diisi."); return; }
         sessionStorage.setItem("calleeName", name);
         startCall(name).catch(err => {
@@ -132,7 +132,7 @@ async function initAfterAuth() {
         });
       }
     } else if (data?.answer) {
-      // panggilan aktif → callee lain diarahkan ke antrian
+      // aktif → callee lain diarahkan
       if (!isCallerPage) {
         alert("Maaf, CS sedang melayani pelanggan lain.");
         location.href = PAGES.busy;
@@ -144,7 +144,7 @@ async function initAfterAuth() {
   updateButtonStates();
 }
 
-// ==================== HELPER: QUEUE & CANDIDATES ====================
+// ==================== QUEUE HELPERS ====================
 async function getQueueDocs() {
   const qRef = collection(db, "rooms", ROOM_ID, "queue");
   const qs = await getDocs(query(qRef, orderBy("createdAt","asc")));
@@ -168,7 +168,7 @@ function hasActiveCallee(roomData) {
   return !!(roomData?.answer && roomData?.status === "active");
 }
 
-// ==================== START CALL (caller/callee) ====================
+// ==================== START CALL ====================
 async function startCall(calleeNameFromInit = null) {
   try {
     showLoading(true);
@@ -178,7 +178,6 @@ async function startCall(calleeNameFromInit = null) {
       if (camPerm?.state === "denied") { alert("Izin kamera ditolak."); return; }
     } catch {}
 
-    // siapkan stream
     if (!localStream) localStream  = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     remoteStream = new MediaStream();
     document.querySelector("#localVideo").srcObject = localStream;
@@ -199,7 +198,7 @@ async function startCall(calleeNameFromInit = null) {
       servers.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
     }
 
-    // PeerConnection
+    // RTCPeerConnection
     peerConnection = new RTCPeerConnection(servers);
     localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
     peerConnection.ontrack = e => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
@@ -209,7 +208,7 @@ async function startCall(calleeNameFromInit = null) {
     monitorConnectionStatus();
 
     if (!rSnap.exists()) {
-      // ===== CALLER flow (buat room + offer) =====
+      // ===== CALLER flow =====
       isCaller = true;
       await createOfferAsCaller();
 
@@ -223,10 +222,15 @@ async function startCall(calleeNameFromInit = null) {
 
       if (data?.offer && !data?.answer) {
         isCaller = false;
-        const namaCallee = calleeNameFromInit ?? await showNameInputModal();
+        const namaCallee = calleeNameFromInit
+          ?? sessionStorage.getItem("calleeName")
+          ?? sessionStorage.getItem("queueName")
+          ?? await showNameInputModal();
         if (!namaCallee) throw new Error("Nama tidak diisi.");
 
-        peerConnection.onicecandidate = e => { if (e.candidate) addDoc(collection(db, "rooms", ROOM_ID, "calleeCandidates"), e.candidate.toJSON()); };
+        peerConnection.onicecandidate = e => {
+          if (e.candidate) addDoc(collection(db, "rooms", ROOM_ID, "calleeCandidates"), e.candidate.toJSON());
+        };
 
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
         const answer = await peerConnection.createAnswer();
@@ -242,17 +246,17 @@ async function startCall(calleeNameFromInit = null) {
 
         const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
         onSnapshot(callerCandidatesRef, snap => {
-          snap.docChanges().forEach(async ch => { if (ch.type === "added") await peerConnection.addIceCandidate(new RTCIceCandidate(ch.doc.data())); });
+          snap.docChanges().forEach(async ch => {
+            if (ch.type === "added") await peerConnection.addIceCandidate(new RTCIceCandidate(ch.doc.data()));
+          });
         });
 
         onSnapshot(roomRef, s => { if (!s.exists()) cleanupAndRedirectCallee(); });
 
       } else if (!data?.offer) {
-        // belum ada offer → callee diarahkan ke antrian
         alert("Customer Service belum siap. Anda akan diarahkan ke halaman antrian.");
         location.href = PAGES.busy;
       } else {
-        // sudah ada answer (aktif) → callee lain diarahkan
         alert("Maaf, CS sedang melayani pelanggan lain.");
         location.href = PAGES.busy;
       }
@@ -268,19 +272,16 @@ async function startCall(calleeNameFromInit = null) {
   }
 }
 
-// ===== Helper: buat offer sebagai Caller (dipakai start & auto-next)
+// ===== Buat offer sebagai Caller (dipakai start & auto-next)
 async function createOfferAsCaller() {
-  // setup ICE outbound
   peerConnection.onicecandidate = e => {
     if (e.candidate) addDoc(collection(db, "rooms", ROOM_ID, "callerCandidates"), e.candidate.toJSON());
   };
 
-  // tulis offer
   const offer = await peerConnection.createOffer();
   await peerConnection.setLocalDescription(offer);
   await setDoc(roomRef, { offer: { type: offer.type, sdp: offer.sdp }, status: "idle" }, { merge: true });
 
-  // dengarkan answer/nama + attach timer bila sudah aktif
   onSnapshot(roomRef, snapshot => {
     const data = snapshot.data();
     if (!peerConnection.currentRemoteDescription && data?.answer) {
@@ -295,7 +296,6 @@ async function createOfferAsCaller() {
     attachTimerFromRoom(data);
   });
 
-  // dengarkan kandidat callee
   const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
   onSnapshot(calleeCandidatesRef, snap => {
     snap.docChanges().forEach(async ch => {
@@ -320,7 +320,6 @@ function startCallTimer(startedMs, maxSec) {
     renderCallTimer(remain);
     if (remain <= 0) {
       stopCallTimer();
-      // === TIMER HABIS ===
       if (isCaller) {
         await autoNextOrTearDown(); // auto-next bila ada antrian
       } else {
@@ -344,18 +343,17 @@ function ensureCallTimerEl() {
 function removeCallTimerEl(){ const el=document.getElementById("callTimer"); if(el) el.remove(); }
 function renderCallTimer(remain) {
   const mm = String(Math.floor(remain/60)).padStart(2,"0");
-  const ss = String(remain%60).padStart(2,"0");
+  const ss = String(remain%60)).padStart(2,"0"); // <-- keep syntax correct
   const el = document.getElementById("callTimer"); if (el) el.textContent = `Sisa waktu: ${mm}:${ss}`;
 }
 
-// ==================== AUTO-NEXT OR TEARDOWN (CALLER) ====================
+// ==================== AUTO-NEXT / TEARDOWN (CALLER) ====================
 async function autoNextOrTearDown() {
   try {
     const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
     const data = roomSnap.exists() ? roomSnap.data() : {};
     const queueN = await getQueueCount();
 
-    // Tutup PC & remote stream, tapi JANGAN hentikan localStream (caller tetap siaga)
     try {
       remoteStream?.getTracks().forEach(t => t.stop());
       peerConnection?.close();
@@ -363,24 +361,16 @@ async function autoNextOrTearDown() {
     peerConnection = null;
 
     if (queueN > 0) {
-      // Auto-next → bersihkan ICE lama, reset field room, buat offer baru
       await clearCandidatesBoth();
       await setDoc(doc(db, "rooms", ROOM_ID), {
-        offer: null,
-        answer: null,
-        calleeName: null,
-        startedAt: null,
-        status: "idle"
+        offer: null, answer: null, calleeName: null, startedAt: null, status: "idle"
       }, { merge: true });
 
-      // Siapkan PC baru & offer baru
-      await startCall(); // ini akan masuk branch caller dan memanggil createOfferAsCaller()
+      await startCall(); // caller: create offer baru
+
     } else {
-      // Tidak ada antrian
       const hadCallee = hasActiveCallee(data);
-      // Jika caller benar-benar ingin tutup, hapus room & (jika belum pernah ada callee) kosongkan antrian
       await deleteRoomIfCaller({ purgeQueueIfNoActive: !hadCallee });
-      // tetap stay; admin bisa klik Start lagi kapan saja
       const startBtn = document.querySelector("#startCallBtn");
       if (startBtn) { startBtn.style.display = "inline-block"; startBtn.disabled = false; startBtn.onclick = () => startCall(); }
       stopCallTimer(); removeCallTimerEl();
@@ -403,7 +393,6 @@ async function hangUp() {
     peerConnection?.close(); peerConnection = null;
 
     if (isCaller) {
-      // Evaluasi kebijakan purge queue sesuai kondisimu
       const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
       const data = roomSnap.exists() ? roomSnap.data() : {};
       const hadCallee = hasActiveCallee(data);
@@ -442,7 +431,6 @@ async function deleteRoomIfCaller(options = { purgeQueueIfNoActive: false }) {
     const allDocs = [...callerDocs.docs, ...calleeDocs.docs];
     await Promise.all(allDocs.map(d => deleteDoc(d.ref)));
 
-    // PURGE QUEUE jika diminta (no callee ever joined)
     if (options.purgeQueueIfNoActive) {
       await clearQueue();
     }
@@ -480,7 +468,44 @@ function showCalleeDisconnected() {
 }
 function formatName(n){ return (n||"").toString().trim(); }
 
-// ==================== SLIDE PANEL EXISTING + QUEUE (caller) ====================
+// === (FIX) MODAL NAMA CALLEE ===
+function showNameInputModal() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("nameModal");
+    const input = document.getElementById("calleeNameInput");
+    const joinBtn = document.getElementById("joinBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+
+    // kalau tidak ada modal di DOM, fallback prompt
+    if (!modal) { resolve(prompt("Masukkan nama Anda:") || ""); return; }
+
+    modal.style.display = "flex";
+    if (input) { input.value = sessionStorage.getItem("queueName") || ""; input.focus(); }
+
+    const onJoin = () => {
+      const name = (input?.value || "").trim();
+      if (name) {
+        cleanup(); modal.style.display = "none"; resolve(name);
+      } else {
+        alert("Nama tidak boleh kosong."); input?.focus();
+      }
+    };
+    const onCancel = () => { cleanup(); modal.style.display = "none"; resolve(""); };
+    const onKey = (e) => { if (e.key === "Enter") onJoin(); };
+
+    joinBtn?.addEventListener("click", onJoin);
+    cancelBtn?.addEventListener("click", onCancel);
+    input?.addEventListener("keypress", onKey);
+
+    function cleanup() {
+      joinBtn?.removeEventListener("click", onJoin);
+      cancelBtn?.removeEventListener("click", onCancel);
+      input?.removeEventListener("keypress", onKey);
+    }
+  });
+}
+
+// ==================== SLIDE PANEL + QUEUE (caller) ====================
 const slidePanel    = document.getElementById('slidePanel');
 const slideHandle   = document.getElementById('slideHandle');
 const handleIcon    = document.getElementById('handleIcon');
@@ -491,7 +516,7 @@ const statusText    = document.getElementById('statusText');
 const lastChecked   = document.getElementById('lastCheckedText');
 const spinnerDots   = document.getElementById('spinnerDots');
 const closeRoomBtn  = document.getElementById('closeRoomBtn');
-const queueListEl   = document.getElementById('queueList');  // <ul> di slide caller
+const queueListEl   = document.getElementById('queueList');
 
 function openPanel(){ if (!slidePanel) return; slidePanel.classList.add('open'); slidePanel.setAttribute('aria-hidden','false'); panelBackdrop?.classList.add('show'); if (handleIcon) handleIcon.textContent='chevron_right';}
 function closePanel(){ if (!slidePanel) return; slidePanel.classList.remove('open'); slidePanel.setAttribute('aria-hidden','true'); panelBackdrop?.classList.remove('show'); if (handleIcon) handleIcon.textContent='chevron_left';}
@@ -524,7 +549,6 @@ async function checkRoomStatus(){
     statusText.textContent = msg;
     lastChecked.textContent = "Terakhir diperiksa: " + new Date().toLocaleTimeString();
 
-    // Render queue (real-time snapshot cepat)
     if (queueListEl) {
       const qRef = collection(db, "rooms", ROOM_ID, "queue");
       const qSnap = await getDocs(query(qRef, orderBy("createdAt","asc")));
@@ -549,13 +573,12 @@ async function checkRoomStatus(){
 let statusTimer=null;
 function startStatusLoop(){ if(!statusText) return; checkRoomStatus(); if(statusTimer) clearInterval(statusTimer); statusTimer=setInterval(checkRoomStatus, 3000); }
 
-// Tombol "Tutup Koneksi" (admin)
+// Panel admin: tombol hapus
 async function deleteRoomData(){
   if (spinnerDots) spinnerDots.style.display = 'flex';
   if (statusText)  statusText.textContent = "Menghapus data…";
   if (closeRoomBtn) closeRoomBtn.disabled = true;
   try{
-    // cek apakah pernah ada callee aktif
     const r = await getDoc(doc(db,"rooms",ROOM_ID));
     const had = r.exists() ? hasActiveCallee(r.data()) : false;
     await deleteRoomIfCaller({ purgeQueueIfNoActive: !had });
@@ -564,6 +587,7 @@ async function deleteRoomData(){
   catch(err){ if(statusText) statusText.textContent = "❌ " + err.message; }
   finally{ if (spinnerDots) spinnerDots.style.display='none'; if (closeRoomBtn) closeRoomBtn.disabled=false; }
 }
+closeRoomBtn?.addEventListener('click', deleteRoomData);
 
 // ==================== BUSY PAGE (maaf.html) ====================
 async function initBusyPage(){
@@ -686,7 +710,7 @@ function renderBusyCallCountdown(el, startedMs, maxSec){
 }
 function formatMMSS(sec){
   const mm = String(Math.floor(sec/60)).padStart(2,"0");
-  const ss = String(sec%60).padStart(2,"0");
+  const ss = String(sec%60)).padStart(2,"0"); // pastikan bracket benar
   return `${mm}:${ss}`;
 }
 function byId(id){ return document.getElementById(id); }
@@ -699,7 +723,7 @@ async function askNameForQueue(){
   return p.trim();
 }
 
-// ==================== MONITOR STATUS (kecil di halaman) ====================
+// ==================== MONITOR STATUS (badge kecil) ====================
 function monitorConnectionStatus() {
   const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
   const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
@@ -729,7 +753,6 @@ function monitorConnectionStatus() {
         }
         wasCalleeConnected = true;
       } else if (snapshot.empty && wasCalleeConnected) {
-        // Callee terputus → auto-next jika ada antrian
         showCalleeDisconnected(); wasCalleeConnected = false;
         const label = document.getElementById("calleeNameLabel"); if (label) label.style.display = "none";
         stopCallTimer(); removeCallTimerEl();
