@@ -4,7 +4,7 @@ import {
   getFirestore, doc, setDoc, getDoc, deleteDoc,
   collection, addDoc, onSnapshot, getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-import {
+import { 
   getAuth, signInAnonymously, onAuthStateChanged,
   setPersistence, browserLocalPersistence, browserSessionPersistence, inMemoryPersistence
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
@@ -18,41 +18,28 @@ const firebaseConfig = {
   appId: "1:317019843909:web:2d5b2b2c9dd118e0ce622c"
 };
 
+// === KONFIG TURN PROXY (Cloudflare Worker) ===
+const TURN_PROXY = "https://wrangler.avsecbwx2018.workers.dev/"; // GANTI ke URL Worker kamu / route custom
+const TURN_SHARED_TOKEN = "N45p"; // opsional: samakan dgn SHARED_TOKEN di Worker, atau "" bila tidak dipakai
+
 // Hindari double init jika file lain juga import Firebase
-const app  = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const db   = getFirestore(app);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db  = getFirestore(app);
 const auth = getAuth(app);
 
-// ==================== UTIL ====================
-const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-const log   = (...a) => console.log("[RTC]", ...a);
-const warn  = (...a) => console.warn("[RTC]", ...a);
-const err   = (...a) => console.error("[RTC]", ...a);
-
 // === Persistence fallback + tunggu anon login selesai ===
-let _authPrepared = false;
 async function preparePersistence() {
-  if (_authPrepared) return;
   try {
     await setPersistence(auth, browserLocalPersistence);
   } catch {
     try { await setPersistence(auth, browserSessionPersistence); }
     catch { await setPersistence(auth, inMemoryPersistence); }
   }
-  _authPrepared = true;
 }
 
-let _loginOnce;
 async function ensureAnonLogin() {
-  if (_loginOnce) return _loginOnce;
-  _loginOnce = (async () => {
-    await preparePersistence();
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-    return waitForUser();
-  })();
-  return _loginOnce;
+  await preparePersistence();
+  await signInAnonymously(auth);
 }
 
 function waitForUser(timeoutMs = 8000) {
@@ -84,39 +71,33 @@ let peerConnection = null;
 let roomRef = null;
 let isCaller = false;
 let wasCalleeConnected = false;
-let starting = false; // guard anti double start
-const ROOM_ID = (window.ROOM_ID || "cs-room"); // boleh override dari HTML
+const ROOM_ID = (window.ROOM_ID || "cs-room"); // bisa di-overwrite dari HTML bila perlu
 
 // ==================== INIT ====================
 window.onload = async () => {
   try {
-    const user = await ensureAnonLogin();
-    log("✅ Anon login:", user.uid);
-
+    await ensureAnonLogin();
+    const user = await waitForUser();
+    console.log("✅ Anon login:", user.uid);
     initAfterAuth();
     startStatusLoop();
-
-    // Opsional: auto open panel sebentar setelah ready
-    setTimeout(openPanel, 600);
+    setTimeout(()=>{ openPanel(); }, 600);
   } catch (e) {
-    err("❌ Gagal login anonim:", e);
+    console.error("❌ Gagal login anonim:", e);
     alert("Tidak bisa login ke server. Silakan refresh atau coba browser lain.");
   }
 };
 
 async function initAfterAuth() {
   const isCallerPage = location.pathname.includes("caller.html");
-  const startBtn  = document.querySelector("#startCallBtn");
+  const startBtn = document.querySelector("#startCallBtn");
   const hangupBtn = document.querySelector("#hangupBtn");
 
   if (!isCallerPage && startBtn) startBtn.remove();
   if (hangupBtn) hangupBtn.addEventListener("click", hangUp);
 
-  // Cleanup ketika tab ditutup/refresh
   window.addEventListener("beforeunload", async () => {
-    try {
-      if (!isCaller) await deleteCalleeCandidates();
-    } catch {}
+    try { if (!isCaller) await deleteCalleeCandidates(); } catch {}
   });
 
   const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
@@ -125,7 +106,7 @@ async function initAfterAuth() {
     if (isCallerPage && startBtn) {
       startBtn.style.display = "inline-block";
       startBtn.disabled = false;
-      startBtn.addEventListener("click", () => startCall());
+      startBtn.addEventListener("click", startCall);
     } else {
       alert("Customer Service belum memulai panggilan. Silakan coba lagi nanti.");
       location.href = PAGES.thanks;
@@ -135,20 +116,19 @@ async function initAfterAuth() {
 
     if (isCallerPage && startBtn) {
       startBtn.style.display = "inline-block";
-      startBtn.disabled = true; // room sudah ada, tunggu callee
+      startBtn.disabled = true; // room sudah ada, menunggu callee
     }
 
     if (data?.offer && !data?.answer) {
-      // Ada offer → callee boleh join
       if (!isCallerPage) {
         const name = await showNameInputModal();
-        if (!name?.trim()) {
+        if (!name || name.trim() === "") {
           alert("Nama wajib diisi untuk bergabung ke panggilan.");
           return;
         }
         sessionStorage.setItem("calleeName", name);
-        startCall(name).catch(e => {
-          err("Gagal auto-join:", e);
+        startCall(name).catch(err => {
+          console.error("Gagal auto-join:", err);
           alert("Gagal auto-join. Silakan coba lagi.");
         });
       }
@@ -163,79 +143,44 @@ async function initAfterAuth() {
 
 // ==================== START CALL ====================
 async function startCall(calleeNameFromInit = null) {
-  if (starting || peerConnection) return; // guard
-  starting = true;
-
   try {
     showLoading(true);
 
-    // Cek izin kamera (opsional)
     try {
-      const camPerm = await navigator.permissions?.query?.({ name: "camera" });
-      if (camPerm?.state === "denied") {
+      const camPerm = await navigator.permissions.query({ name: "camera" });
+      if (camPerm.state === "denied") {
         alert("Izin kamera ditolak. Aktifkan kamera di pengaturan browser.");
         return;
       }
-    } catch { /* Permissions API tidak selalu ada */ }
+    } catch {}
 
-    // Ambil media (kualitas suara lebih stabil)
-    const constraints = {
-      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" },
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      }
-    };
-    localStream  = await navigator.mediaDevices.getUserMedia(constraints);
+    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     remoteStream = new MediaStream();
 
-    const localEl  = document.querySelector("#localVideo");
-    const remoteEl = document.querySelector("#remoteVideo");
-    if (localEl)  localEl.srcObject  = localStream;
-    if (remoteEl) remoteEl.srcObject = remoteStream;
+    document.querySelector("#localVideo").srcObject = localStream;
+    document.querySelector("#remoteVideo").srcObject = remoteStream;
 
-    // Siapkan ICE servers
+    // === Ambil ICE via Cloudflare Worker Proxy (ganti Xirsys langsung) ===
     let servers = { iceServers: [], iceCandidatePoolSize: 10 };
     try {
-      const res  = await fetch("https://global.xirsys.net/_turn/WebRTC", {
-        method: "PUT",
-        headers: {
-          "Authorization": "Basic " + btoa("n45pnasp:ad5ce69c-45d6-11f0-b602-b6807fc9719e"),
-          "Content-Type": "application/json"
-        }
-      });
-      const data = await res.json();
-      const validIceServers = data?.v?.iceServers?.filter(s => s?.urls?.length);
+      const qs = TURN_SHARED_TOKEN
+        ? `?channel=WebRTC&token=${encodeURIComponent(TURN_SHARED_TOKEN)}`
+        : `?channel=WebRTC`;
+      const resp = await fetch(`${TURN_PROXY}${qs}`, { method: "GET" });
+      if (!resp.ok) throw new Error(`TURN proxy error ${resp.status}`);
+      const data = await resp.json();
+      const validIceServers = data?.iceServers?.filter(s => s?.urls);
       if (!validIceServers?.length) throw new Error("ICE servers kosong/invalid");
       servers.iceServers = validIceServers;
-      log("ICE servers OK:", servers.iceServers.map(s => s.urls).flat());
     } catch (e) {
-      warn("Xirsys gagal, fallback ke Google STUN:", e?.message || e);
+      console.warn("TURN proxy gagal, fallback ke Google STUN:", e?.message || e);
       servers.iceServers = [{ urls: "stun:stun.l.google.com:19302" }];
     }
+    // ====================================================================
 
-    // Buat PeerConnection
     peerConnection = new RTCPeerConnection(servers);
     localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
     peerConnection.ontrack = e => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
-
-    // Observers koneksi
-    peerConnection.addEventListener("iceconnectionstatechange", () => {
-      log("iceConnectionState:", peerConnection.iceConnectionState);
-      if (peerConnection.iceConnectionState === "failed") {
-        showToast("Jaringan bermasalah, mencoba ulang ICE…");
-        peerConnection.restartIce?.();
-      } else if (peerConnection.iceConnectionState === "disconnected") {
-        showToast("Terputus sementara…");
-      }
-    });
-    peerConnection.addEventListener("connectionstatechange", () => {
-      log("connectionState:", peerConnection.connectionState);
-      if (peerConnection.connectionState === "failed") {
-        showToast("Koneksi gagal. Tutup dan coba lagi.");
-      }
-    });
 
     roomRef = doc(db, "rooms", ROOM_ID);
     const roomSnap = await getDoc(roomRef);
@@ -247,15 +192,10 @@ async function startCall(calleeNameFromInit = null) {
       isCaller = true;
 
       peerConnection.onicecandidate = e => {
-        if (e.candidate) {
-          addDoc(collection(db, "rooms", ROOM_ID, "callerCandidates"), e.candidate.toJSON());
-        }
+        if (e.candidate) addDoc(collection(db, "rooms", ROOM_ID, "callerCandidates"), e.candidate.toJSON());
       };
 
-      const offer = await peerConnection.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: true
-      });
+      const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
       await setDoc(roomRef, { offer: { type: offer.type, sdp: offer.sdp } });
 
@@ -264,7 +204,6 @@ async function startCall(calleeNameFromInit = null) {
         if (!peerConnection.currentRemoteDescription && data?.answer) {
           peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
         }
-        // Tampilkan nama callee bila tersedia
         if (data?.calleeName) {
           const label = document.getElementById("calleeNameLabel");
           if (label && label.textContent !== data.calleeName) {
@@ -298,14 +237,11 @@ async function startCall(calleeNameFromInit = null) {
       if (data?.offer && !data?.answer) {
         isCaller = false;
 
-        // Popup nama (jika belum ada)
         const namaCallee = calleeNameFromInit ?? await showNameInputModal();
         if (!namaCallee) throw new Error("Nama tidak diisi.");
 
         peerConnection.onicecandidate = e => {
-          if (e.candidate) {
-            addDoc(collection(db, "rooms", ROOM_ID, "calleeCandidates"), e.candidate.toJSON());
-          }
+          if (e.candidate) addDoc(collection(db, "rooms", ROOM_ID, "calleeCandidates"), e.candidate.toJSON());
         };
 
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -327,10 +263,9 @@ async function startCall(calleeNameFromInit = null) {
           });
         });
 
-        // Room dihapus oleh caller?
         onSnapshot(roomRef, docSnap => {
           if (!docSnap.exists()) {
-            warn("Room dihapus oleh caller, callee keluar…");
+            console.warn("Room dihapus oleh caller, callee keluar...");
             cleanupAndRedirectCallee();
           }
         });
@@ -341,24 +276,23 @@ async function startCall(calleeNameFromInit = null) {
       }
     }
 
-  } catch (e) {
-    err("❌ startCall error:", e);
-    alert("Gagal connect: " + e.message);
+  } catch (err) {
+    console.error("❌ startCall error:", err);
+    alert("Gagal connect: " + err.message);
   } finally {
     showLoading(false);
     const startBtn = document.querySelector("#startCallBtn");
     if (startBtn) startBtn.disabled = true;
     updateButtonStates();
-    starting = false;
   }
 }
 
 // ==================== MODAL NAMA CALLEE ====================
 function showNameInputModal() {
   return new Promise((resolve) => {
-    const modal     = document.getElementById("nameModal");
-    const input     = document.getElementById("calleeNameInput");
-    const joinBtn   = document.getElementById("joinBtn");
+    const modal = document.getElementById("nameModal");
+    const input = document.getElementById("calleeNameInput");
+    const joinBtn = document.getElementById("joinBtn");
     const cancelBtn = document.getElementById("cancelBtn");
 
     if (!modal) { resolve(prompt("Masukkan nama Anda:") || ""); return; }
@@ -398,7 +332,7 @@ function showNameInputModal() {
   });
 }
 
-// ==================== MONITOR STATUS (label kecil) ====================
+// ==================== MONITOR STATUS (untuk label kecil di halaman) ====================
 function monitorConnectionStatus() {
   const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
   const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
@@ -416,6 +350,7 @@ function monitorConnectionStatus() {
     if (isCaller) {
       if (!snapshot.empty) {
         if (el) el.textContent = "Terkoneksi";
+
         getDoc(doc(db, "rooms", ROOM_ID)).then((docSnap) => {
           if (docSnap.exists()) {
             const name = docSnap.data().calleeName;
@@ -428,6 +363,7 @@ function monitorConnectionStatus() {
             }
           }
         });
+
         wasCalleeConnected = true;
       } else if (snapshot.empty && wasCalleeConnected) {
         showCalleeDisconnected();
@@ -452,10 +388,8 @@ async function hangUp() {
   try {
     localStream?.getTracks().forEach(t => t.stop());
     remoteStream?.getTracks().forEach(t => t.stop());
-    const localEl  = document.querySelector("#localVideo");
-    const remoteEl = document.querySelector("#remoteVideo");
-    if (localEl)  localEl.srcObject = null;
-    if (remoteEl) remoteEl.srcObject = null;
+    document.querySelector("#localVideo").srcObject = null;
+    document.querySelector("#remoteVideo").srcObject = null;
 
     peerConnection?.close();
     peerConnection = null;
@@ -473,7 +407,7 @@ async function hangUp() {
       location.reload();
     }
   } catch (e) {
-    warn("hangUp error:", e);
+    console.warn("hangUp error:", e);
     location.href = PAGES.thanks;
   }
 }
@@ -485,10 +419,8 @@ function cleanupAndRedirectCallee() {
     remoteStream?.getTracks().forEach(t => t.stop());
     peerConnection?.close();
   } catch {}
-  const localEl  = document.querySelector("#localVideo");
-  const remoteEl = document.querySelector("#remoteVideo");
-  if (localEl)  localEl.srcObject = null;
-  if (remoteEl) remoteEl.srcObject = null;
+  document.querySelector("#localVideo").srcObject = null;
+  document.querySelector("#remoteVideo").srcObject = null;
 
   deleteCalleeCandidates().finally(() => {
     location.href = PAGES.thanks;
@@ -502,18 +434,16 @@ async function deleteRoomIfCaller() {
     const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
     const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
 
-    const [callerDocs, calleeDocs] = await Promise.all([
-      getDocs(callerCandidatesRef),
-      getDocs(calleeCandidatesRef),
-    ]);
+    const callerDocs = await getDocs(callerCandidatesRef);
+    const calleeDocs = await getDocs(calleeCandidatesRef);
     const allDocs = [...callerDocs.docs, ...calleeDocs.docs];
 
     await Promise.all(allDocs.map(d => deleteDoc(d.ref)));
     await deleteDoc(roomRef);
 
-    log("🔥 Room & subkoleksi berhasil dihapus");
-  } catch (e) {
-    warn("⚠️ Gagal hapus room:", e.message);
+    console.log("🔥 Room & subkoleksi berhasil dihapus");
+  } catch (err) {
+    console.warn("⚠️ Gagal hapus room:", err.message);
   }
 }
 
@@ -522,9 +452,9 @@ async function deleteCalleeCandidates() {
     const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
     const calleeDocs = await getDocs(calleeCandidatesRef);
     await Promise.all(calleeDocs.docs.map(d => deleteDoc(d.ref)));
-    log("🧹 calleeCandidates dihapus");
-  } catch (e) {
-    warn("⚠️ Gagal hapus calleeCandidates:", e.message);
+    console.log("🧹 calleeCandidates dihapus");
+  } catch (err) {
+    console.warn("⚠️ Gagal hapus calleeCandidates:", err.message);
   }
 }
 
@@ -560,39 +490,13 @@ function showCalleeDisconnected() {
     fontSize: "16px"
   });
   document.body.appendChild(message);
-  setTimeout(() => message.remove(), 3000);
-}
-
-function showToast(text = "") {
-  const id = "rtc-toast";
-  let el = document.getElementById(id);
-  if (!el) {
-    el = document.createElement("div");
-    el.id = id;
-    Object.assign(el.style, {
-      position: "fixed",
-      bottom: "calc(20px + env(safe-area-inset-bottom))",
-      left: "50%",
-      transform: "translateX(-50%)",
-      background: "rgba(30,30,30,.85)",
-      color: "#fff",
-      padding: "10px 14px",
-      borderRadius: "10px",
-      zIndex: 9999,
-      fontSize: "14px",
-      backdropFilter: "blur(8px)",
-      transition: "opacity .2s ease"
-    });
-    document.body.appendChild(el);
-  }
-  el.textContent = text;
-  el.style.opacity = "1";
-  setTimeout(() => { el.style.opacity = "0"; }, 2200);
 }
 
 // =====================================================
 // =============== SLIDE PANEL (MERGED) ================
 // =====================================================
+
+// DOM refs (aman jika elemen belum ada; cek null)
 const slidePanel    = document.getElementById('slidePanel');
 const slideHandle   = document.getElementById('slideHandle');
 const handleIcon    = document.getElementById('handleIcon');
@@ -624,9 +528,9 @@ slideHandle?.addEventListener('click', togglePanel);
 closePanelBtn?.addEventListener('click', closePanel);
 panelBackdrop?.addEventListener('click', closePanel);
 
-// Gesture: swipe from right edge to open
+// Gesture: swipe dari edge kanan untuk buka
 let touchStartX = null, touching = false;
-const EDGE = 24;
+const EDGE = 24; // px dari sisi kanan
 window.addEventListener('touchstart', (e)=>{
   if (!slidePanel || slidePanel.classList.contains('open')) return;
   const t = e.touches[0];
@@ -645,13 +549,15 @@ window.addEventListener('touchend', ()=>{ touching=false; touchStartX=null; });
 
 // === Status cek untuk panel ===
 async function checkRoomStatus(){
-  if (!statusText || !lastChecked) return;
+  if (!statusText || !lastChecked) return; // panel belum dipasang
   try{
     const callerRef = collection(db, 'rooms', ROOM_ID, 'callerCandidates');
     const calleeRef = collection(db, 'rooms', ROOM_ID, 'calleeCandidates');
+
     const [callerSnap, calleeSnap] = await Promise.all([
       getDocs(callerRef), getDocs(calleeRef)
     ]);
+
     const callerConnected = !callerSnap.empty;
     const calleeConnected = !calleeSnap.empty;
 
@@ -663,15 +569,15 @@ async function checkRoomStatus(){
 
     statusText.textContent = msg;
     lastChecked.textContent = "Terakhir diperiksa: " + new Date().toLocaleTimeString();
-  }catch(e){
-    statusText.textContent = "❌ Gagal mengecek status: " + e.message;
+  }catch(err){
+    statusText.textContent = "❌ Gagal mengecek status: " + err.message;
     lastChecked.textContent = "Terakhir diperiksa: -";
   }
 }
 
 let statusTimer = null;
 function startStatusLoop(){
-  if (!statusText) return;
+  if (!statusText) return; // panel belum ada
   checkRoomStatus();
   if (statusTimer) clearInterval(statusTimer);
   statusTimer = setInterval(checkRoomStatus, 3000);
@@ -685,8 +591,8 @@ async function deleteRoomData(){
   try{
     await deleteRoomIfCaller();
     if (statusText) statusText.textContent = "✅ Room berhasil dihapus!";
-  }catch(e){
-    if (statusText) statusText.textContent = "❌ Gagal menghapus room: " + e.message;
+  }catch(err){
+    if (statusText) statusText.textContent = "❌ Gagal menghapus room: " + err.message;
   }finally{
     if (spinnerDots) spinnerDots.style.display = 'none';
     if (closeRoomBtn) closeRoomBtn.disabled = false;
