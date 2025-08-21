@@ -15,24 +15,20 @@
 </head>
 <body>
 
-  <!-- (Baru) Label nama callee; diisi otomatis oleh app.js bila tersedia -->
+  <!-- Label nama callee (diisi app.js) -->
   <div id="calleeNameLabel" style="display:none;"></div>
 
   <!-- Tombol kontrol -->
   <div id="buttons">
-    <!-- Callee tidak butuh start button -->
     <button class="mdc-button mdc-button--raised" id="startCallBtn" style="display:none;">
       <i class="material-icons mdc-button__icon" aria-hidden="true">call</i>
       <span class="mdc-button__label">Mulai Panggilan</span>
     </button>
-
-    <!-- Hangup -->
     <button class="mdc-button mdc-button--raised" disabled id="hangupBtn" title="Akhiri panggilan">
       <i class="material-icons mdc-button__icon" aria-hidden="true">call_end</i>
     </button>
   </div>
 
-  <!-- Status singkat -->
   <div><span id="currentRoom"></span></div>
 
   <!-- Video -->
@@ -42,13 +38,13 @@
     <img id="watermark-logo" src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney" />
   </div>
 
-  <!-- Overlay Loading -->
+  <!-- Loading -->
   <div id="loading" class="loading-overlay" style="display:none;">
     <div class="loading-spinner"></div>
     <div class="loading-text">Connecting...</div>
   </div>
 
-  <!-- Modal nama callee (dipakai saat join pertama kali) -->
+  <!-- Modal nama callee -->
   <div id="nameModal" class="modal" style="display:none;">
     <div class="modal-content">
       <h2>Masukkan Nama Anda</h2>
@@ -61,10 +57,7 @@
     </div>
   </div>
 
-  <!-- (Opsional) set ROOM_ID dinamis via query ?room=xxx -->
   <!-- <script>window.ROOM_ID = new URLSearchParams(location.search).get('room') || 'cs-room';</script> -->
-
-  <!-- Script utama (menangani countdown 15 menit, WebRTC, dsb) -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
