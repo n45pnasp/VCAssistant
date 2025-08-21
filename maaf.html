@@ -9,49 +9,20 @@
     body{font-family:'Roboto',sans-serif;background:#fff;color:#333;padding:40px 20px;text-align:center}
     #logo img{width:110px;opacity:.9;margin-bottom:30px}
     h1{font-size:24px;color:#222;margin-bottom:15px}
-    p{font-size:18px;color:#555;margin-bottom:10px}
-    .chip{display:inline-block;background:#f2f4f7;border-radius:999px;padding:8px 14px;font-weight:600;margin:6px 0}
-    .meta{color:#666;font-size:15px;margin:6px 0}
+    p{font-size:18px;color:#555;margin-bottom:30px}
     button{padding:12px 26px;font-size:16px;background:#007bff;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold}
     button:hover{background:#0056b3}
     #footerNote{margin-top:40px;font-size:13px;color:#999}
-
-    /* Modal tawaran masuk */
-    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;justify-content:center;align-items:center}
-    .modal-card{background:#1c1c1e;color:#fff;border-radius:14px;width:min(92%,320px);padding:20px 18px;text-align:center}
-    .modal-card h3{margin:6px 0 12px;font-size:18px}
-    .modal-actions{display:flex;gap:10px;justify-content:center;margin-top:14px}
-    .modal-actions button{flex:1}
-    .count{font-weight:700}
   </style>
 </head>
 <body>
   <div id="logo">
     <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
   </div>
-
-  <h1>Maaf, Customer Service sedang melayani pelanggan. 🙏</h1>
-
-  <p class="chip" id="queuePositionText">Menghitung posisi…</p>
-  <p class="meta" id="currentCallTimer">—</p>
-  <p class="meta" id="etaText">Estimasi waktu: —</p>
-
+  <h1>Maaf Customer Service sedang melayani pelanggan.. 🙏</h1>
+  <p>Anda bisa menghubungi kembali nanti.</p>
+  <!-- Relatif ke folder saat ini -->
   <button onclick="window.location.href='./'">Coba Lagi</button>
   <div id="footerNote">Terima kasih telah menggunakan layanan kami</div>
-
-  <!-- Modal tawaran masuk -->
-  <div class="modal" id="offerModal" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <h3 id="offerText">Giliran Anda. Masuk sekarang?</h3>
-      <p>Waktu tersisa: <span class="count" id="offerCountdown">10</span> detik</p>
-      <div class="modal-actions">
-        <button id="acceptBtn" style="background:#28a745">Masuk</button>
-        <button id="declineBtn" style="background:#6c757d">Lewati</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Logika antrian & countdown -->
-  <script type="module" src="./app.js"></script>
 </body>
 </html>
