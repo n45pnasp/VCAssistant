@@ -1,4 +1,4 @@
-<!-- caller.html (FINAL) -->
+<!-- caller.html (CLEAN) -->
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -13,83 +13,6 @@
 
   <!-- App styles -->
   <link rel="stylesheet" href="./main.css" />
-
-  <!-- Slide panel styles (bisa dipindah ke main.css jika mau) -->
-  <style>
-    :root{
-      --panel-bg:#0d1418;
-      --panel-text:#e0e0e0;
-      --panel-muted:#9aa0a6;
-      --panel-accent:#f44336;
-      --panel-width: 320px;
-      --panel-shadow: 0 10px 30px rgba(0,0,0,.45);
-    }
-    /* ===== Slide Panel (kanan) ===== */
-    .slide-panel{
-      position: fixed; top:0; right:0; height:100vh;
-      width: var(--panel-width); max-width: 85vw;
-      background: var(--panel-bg); color: var(--panel-text);
-      transform: translateX(100%); transition: transform .28s ease;
-      z-index: 1000; display:flex; flex-direction:column;
-      box-shadow: var(--panel-shadow);
-      touch-action: pan-y;
-    }
-    .slide-panel.open{ transform: translateX(0); }
-
-    .slide-header{
-      display:flex; align-items:center; gap:10px;
-      padding:14px 14px; border-bottom:1px solid rgba(255,255,255,.08);
-      font-weight:600;
-    }
-    .slide-body{ padding:16px; overflow:auto; }
-
-    .row{ margin-bottom:14px; }
-    .status{ font-size:15px; }
-    .last-checked{ font-size:12px; color: var(--panel-muted); }
-
-    .spinner{
-      margin-top:12px; display:none;
-      justify-content:center; align-items:center; gap:8px;
-    }
-    .dot{ width:8px; height:8px; border-radius:50%;
-      background: var(--panel-accent); animation: bounce 1.2s infinite ease-in-out; }
-    .dot:nth-child(2){ animation-delay:.2s }
-    .dot:nth-child(3){ animation-delay:.4s }
-    @keyframes bounce{ 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
-
-    .panel-actions{ display:flex; gap:8px; margin-top:8px; }
-    .btn-danger{
-      background: var(--panel-accent); color:#fff; border:none;
-      padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
-    }
-    .btn-danger:disabled{ opacity:.7; cursor:not-allowed; }
-    .note{ font-size:12px; color: var(--panel-muted); margin-top:10px; }
-
-    /* Handle/Tab untuk buka-tutup */
-    .slide-handle{
-      position: fixed; top: 50%; right: 0; transform: translateY(-50%);
-      z-index: 1001;
-      width: 36px; height: 72px; border-radius: 12px 0 0 12px;
-      background: #111b21; color:#e9edef; display:flex; align-items:center; justify-content:center;
-      border-left: 1px solid rgba(255,255,255,.08);
-      border-top: 1px solid rgba(255,255,255,.08);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      box-shadow: 0 8px 20px rgba(0,0,0,.35);
-      cursor: pointer; user-select:none;
-    }
-    .slide-handle .material-icons{ font-size: 22px; }
-
-    /* Backdrop saat panel terbuka */
-    .panel-backdrop{
-      position: fixed; inset:0; background: rgba(0,0,0,.3);
-      opacity:0; visibility:hidden; transition: opacity .2s ease;
-      z-index: 999;
-    }
-    .panel-backdrop.show{ opacity:1; visibility:visible; }
-
-    /* Minor tweak agar watermark tidak ketutup handle */
-    #watermark-logo{ pointer-events: none; }
-  </style>
 </head>
 <body>
   <div id="calleeNameLabel" style="display:none;">Nama Callee</div>
