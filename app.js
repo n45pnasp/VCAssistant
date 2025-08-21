@@ -21,7 +21,7 @@ const firebaseConfig = {
 };
 
 // TURN Proxy (Cloudflare Worker)
-const TURN_PROXY = "https://turn-proxy-xxxxx.yourname.workers.dev/turn"; // GANTI ke URL Worker kamu
+const TURN_PROXY = "https://wrangler.avsecbwx2018.workers.dev/"; // GANTI ke URL Worker kamu
 const TURN_SHARED_TOKEN = "N45p"; // kosongkan "" bila tidak pakai
 
 // PAGES
