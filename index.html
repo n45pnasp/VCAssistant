@@ -15,21 +15,24 @@
 </head>
 <body>
 
+  <!-- (Baru) Label nama callee; diisi otomatis oleh app.js bila tersedia -->
+  <div id="calleeNameLabel" style="display:none;"></div>
+
   <!-- Tombol kontrol -->
   <div id="buttons">
-    <!-- Callee tidak butuh start button, biarkan tersembunyi -->
+    <!-- Callee tidak butuh start button -->
     <button class="mdc-button mdc-button--raised" id="startCallBtn" style="display:none;">
       <i class="material-icons mdc-button__icon" aria-hidden="true">call</i>
       <span class="mdc-button__label">Mulai Panggilan</span>
     </button>
 
     <!-- Hangup -->
-    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn">
+    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn" title="Akhiri panggilan">
       <i class="material-icons mdc-button__icon" aria-hidden="true">call_end</i>
     </button>
   </div>
 
-  <!-- Status -->
+  <!-- Status singkat -->
   <div><span id="currentRoom"></span></div>
 
   <!-- Video -->
@@ -45,7 +48,7 @@
     <div class="loading-text">Connecting...</div>
   </div>
 
-  <!-- Modal nama callee -->
+  <!-- Modal nama callee (dipakai saat join pertama kali) -->
   <div id="nameModal" class="modal" style="display:none;">
     <div class="modal-content">
       <h2>Masukkan Nama Anda</h2>
@@ -58,7 +61,10 @@
     </div>
   </div>
 
-  <!-- Script utama -->
+  <!-- (Opsional) set ROOM_ID dinamis via query ?room=xxx -->
+  <!-- <script>window.ROOM_ID = new URLSearchParams(location.search).get('room') || 'cs-room';</script> -->
+
+  <!-- Script utama (menangani countdown 15 menit, WebRTC, dsb) -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
