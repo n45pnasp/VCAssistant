@@ -21,7 +21,7 @@
 
   <script type="module">
     import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, updateDoc, arrayUnion, deleteField } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAjqMqmKUDPWHkv19Dig7PnUpHMzNf9J1A",
@@ -58,7 +58,15 @@
       const idx = list.findIndex(n => n === myName);
       posEl.textContent = idx >= 0 ? idx + 1 : "-";
       if (data.allowed === myName) {
-        window.location.href = `./?name=${encodeURIComponent(myName)}`;
+        const ok = confirm("anda dipersilahkan masuk, bersedia?");
+        if (ok) {
+          window.location.href = `./?name=${encodeURIComponent(myName)}`;
+        } else {
+          updateDoc(doc(db, "queues", ROOM_ID), {
+            allowed: deleteField(),
+            list: arrayUnion(myName)
+          });
+        }
       }
     });
 

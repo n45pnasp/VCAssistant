@@ -298,7 +298,6 @@ async function initAfterAuth() {
 
   if (isCallerPage) {
     listenQueueForCaller();
-    document.getElementById("allowNextBtn")?.addEventListener("click", allowNextCallee);
   }
 
   // Cleanup ketika tab ditutup/refresh
@@ -693,7 +692,6 @@ async function addToQueue(name) {
 
 function listenQueueForCaller() {
   const listEl = document.getElementById("queueList");
-  const allowBtn = document.getElementById("allowNextBtn");
   if (!listEl) return;
   const qRef = doc(db, "queues", ROOM_ID);
   onSnapshot(qRef, (snap) => {
@@ -701,32 +699,36 @@ function listenQueueForCaller() {
     const list = data.list || [];
     if (list.length) {
       listEl.innerHTML = list
-        .map((n, i) => `<li>${i + 1}. ${formatName(n)}</li>`)
+        .map((n, i) =>
+          `<li>${i + 1}. ${formatName(n)} <button class="btn-primary allow-btn" data-name="${n}">Siap Masuk</button></li>`
+        )
         .join("");
+      listEl.querySelectorAll(".allow-btn").forEach(btn => {
+        btn.addEventListener("click", () => allowCallee(btn.dataset.name));
+      });
     } else {
       listEl.innerHTML = "<li>(Kosong)</li>";
     }
-    if (allowBtn) allowBtn.disabled = list.length === 0;
   });
 }
 
-async function allowNextCallee() {
+async function allowCallee(name) {
   try {
     const qRef = doc(db, "queues", ROOM_ID);
     const snap = await getDoc(qRef);
     const list = snap.data()?.list || [];
-    if (!list.length) {
+    const target = name || list[0];
+    if (!target) {
       await alertModal("Tidak ada antrian.");
       return;
     }
-    const next = list[0];
     await startCall();
     await updateDoc(qRef, {
-      list: arrayRemove(next),
-      allowed: next,
+      list: arrayRemove(target),
+      allowed: target,
     });
   } catch (e) {
-    console.warn("allowNextCallee error", e);
+    console.warn("allowCallee error", e);
   }
 }
 
