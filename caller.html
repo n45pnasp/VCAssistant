@@ -1,78 +1,79 @@
-<!doctype html>
+<!-- caller.html (CLEAN) -->
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Caller | CS</title>
-  <link rel="stylesheet" href="main.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Service BWX (Admin)</title>
+
+  <!-- Material Components -->
+  <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="./main.css" />
 </head>
 <body>
+  <div id="calleeNameLabel" style="display:none;">Nama Callee</div>
 
-  <header class="topbar">
-    <h1>Customer Service — Admin</h1>
-    <div class="status">
-      <span id="currentRoom">Offline</span>
-      <span id="calleeNameLabel" style="display:none;"></span>
-    </div>
-  </header>
-
-  <main class="layout">
-    <section class="video-wrap">
-      <div class="video-col">
-        <h2>Admin (You)</h2>
-        <video id="localVideo" autoplay playsinline muted></video>
-      </div>
-      <div class="video-col">
-        <h2>Customer</h2>
-        <video id="remoteVideo" autoplay playsinline></video>
-      </div>
-    </section>
-
-    <section class="controls">
-      <button id="startCallBtn" class="btn btn-primary" disabled>Mulai Panggilan</button>
-      <button id="hangupBtn" class="btn btn-danger">Hangup</button>
-    </section>
-  </main>
-
-  <!-- Loading overlay -->
-  <div id="loading" class="loading" style="display:none;">
-    <div class="spinner"></div>
-    <div>Memuat…</div>
+  <div id="buttons">
+    <button class="mdc-button mdc-button--raised" id="startCallBtn" style="display:none;">
+      <i class="material-icons mdc-button__icon" aria-hidden="true">call</i>
+      <span class="mdc-button__label">Mulai Panggilan</span>
+    </button>
+    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn" title="Akhiri panggilan">
+      <i class="material-icons mdc-button__icon" aria-hidden="true">call_end</i>
+    </button>
   </div>
 
-  <!-- Slide Panel (status + sesi + antrian) -->
-  <div id="panelBackdrop" class="panel-backdrop"></div>
-  <aside id="slidePanel" class="slide-panel" aria-hidden="true">
+  <div><span id="currentRoom"></span></div>
+
+  <div id="videos">
+    <video id="localVideo" muted autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+    <img id="watermark-logo" src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney" />
+  </div>
+
+  <div id="loading" class="loading-overlay" style="display:none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Connecting...</div>
+  </div>
+
+  <!-- ===== Slide Handle & Backdrop ===== -->
+  <div class="slide-handle" id="slideHandle" title="Status Koneksi">
+    <span class="material-icons" id="handleIcon">chevron_left</span>
+  </div>
+  <div class="panel-backdrop" id="panelBackdrop"></div>
+
+  <!-- ===== Slide Panel (Kanan) ===== -->
+  <aside class="slide-panel" id="slidePanel" aria-hidden="true">
     <div class="slide-header">
-      <div>Panel Admin</div>
-      <button id="closePanelBtn" class="icon-btn" aria-label="Tutup panel">✕</button>
+      <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo" style="width:28px; opacity:.9" />
+      <span>Status Koneksi</span>
+      <button class="mdc-icon-button" id="closePanelBtn" aria-label="Tutup panel" style="margin-left:auto;">
+        <i class="material-icons mdc-icon-button__icon">close</i>
+      </button>
     </div>
     <div class="slide-body">
-      <div class="row">
-        <div style="font-weight:600;margin-bottom:6px">Status</div>
-        <div id="statusText" class="last-checked">-</div>
-        <div id="lastCheckedText" class="last-checked">Terakhir diperiksa: -</div>
+      <div class="row status" id="statusText">Memeriksa status koneksi…</div>
+      <div class="row last-checked" id="lastCheckedText">Terakhir diperiksa: -</div>
+
+      <div class="spinner" id="spinnerDots" aria-hidden="true">
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
       </div>
 
-      <div class="row" style="margin-top:12px">
-        <div style="font-weight:600;margin-bottom:6px">Sesi Berjalan</div>
-        <div id="sessionTimer" style="font-size:20px">00:00</div>
-        <div class="last-checked">Maks 10 menit per sesi (tampilan: waktu berjalan)</div>
+      <div class="panel-actions">
+        <button id="closeRoomBtn" class="btn-danger">Tutup Koneksi</button>
       </div>
-
-      <div class="row" style="margin-top:12px">
-        <div style="font-weight:600;margin-bottom:6px">Antrian</div>
-        <div id="queueList" class="last-checked">Memuat antrian…</div>
-      </div>
+      <div class="note">Room & kandidat ICE akan dihapus dari Firestore.</div>
     </div>
   </aside>
 
-  <!-- Panel handle -->
-  <button id="slideHandle" class="slide-handle" aria-label="Buka panel">
-    <span id="handleIcon">chevron_left</span>
-  </button>
+  <!-- (Opsional) set ROOM_ID dinamis via query ?room=xxx -->
+  <!-- <script>window.ROOM_ID = new URLSearchParams(location.search).get('room') || 'cs-room';</script> -->
 
-  <!-- Hanya sumber JS global -->
-  <script type="module" src="app.js"></script>
+  <!-- WebRTC + Panel logic (versi gabungan) -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

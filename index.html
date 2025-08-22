@@ -1,84 +1,64 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pelanggan | CS</title>
-  <link rel="stylesheet" href="main.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Customer Service BWX</title>
+
+  <!-- Material Design -->
+  <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" rel="stylesheet" />
+  <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="./main.css" />
 </head>
 <body>
 
-  <header class="topbar">
-    <h1>Customer Service</h1>
-    <div class="status">
-      <span id="currentRoom">Offline</span>
-      <span id="calleeNameLabel" style="display:none;"></span>
-    </div>
-  </header>
+  <!-- Tombol kontrol -->
+  <div id="buttons">
+    <!-- Callee tidak butuh start button, biarkan tersembunyi -->
+    <button class="mdc-button mdc-button--raised" id="startCallBtn" style="display:none;">
+      <i class="material-icons mdc-button__icon" aria-hidden="true">call</i>
+      <span class="mdc-button__label">Mulai Panggilan</span>
+    </button>
 
-  <main class="layout">
-    <section class="video-wrap">
-      <div class="video-col">
-        <h2>Anda</h2>
-        <video id="localVideo" autoplay playsinline muted></video>
-      </div>
-      <div class="video-col">
-        <h2>Admin</h2>
-        <video id="remoteVideo" autoplay playsinline></video>
-      </div>
-    </section>
+    <!-- Hangup -->
+    <button class="mdc-button mdc-button--raised" disabled id="hangupBtn">
+      <i class="material-icons mdc-button__icon" aria-hidden="true">call_end</i>
+    </button>
+  </div>
 
-    <section class="controls">
-      <button id="hangupBtn" class="btn btn-danger">Akhiri</button>
-    </section>
+  <!-- Status -->
+  <div><span id="currentRoom"></span></div>
 
-    <!-- Waktu panggilan berjalan (ditangani app.js) -->
-    <div id="waktuPanggilan" class="calltime">Memuat…</div>
-  </main>
+  <!-- Video -->
+  <div id="videos">
+    <video id="localVideo" muted autoplay playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+    <img id="watermark-logo" src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney" />
+  </div>
 
-  <!-- Modal input nama (dipakai app.js::showNameInputModal) -->
+  <!-- Overlay Loading -->
+  <div id="loading" class="loading-overlay" style="display:none;">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Connecting...</div>
+  </div>
+
+  <!-- Modal nama callee -->
   <div id="nameModal" class="modal" style="display:none;">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <div>Masukkan Nama Anda</div>
-        <button id="cancelBtn" class="icon-btn" aria-label="Tutup">✕</button>
-      </div>
-      <div class="modal-body">
-        <input id="calleeNameInput" type="text" placeholder="Nama Anda" class="input" />
-        <!-- error inline akan disuntik oleh app.js bila perlu -->
-      </div>
-      <div class="modal-actions">
-        <button id="joinBtn" class="btn btn-primary">Gabung</button>
+    <div class="modal-content">
+      <h2>Masukkan Nama Anda</h2>
+      <p>Nama diperlukan untuk bergabung ke dalam panggilan.</p>
+      <input type="text" id="calleeNameInput" placeholder="Nama..." />
+      <div class="modal-buttons">
+        <button class="modal-button" id="cancelBtn">Batal</button>
+        <button class="modal-button" id="joinBtn">Sambungkan</button>
       </div>
     </div>
   </div>
 
-  <!-- Loading overlay -->
-  <div id="loading" class="loading" style="display:none;">
-    <div class="spinner"></div>
-    <div>Memuat…</div>
-  </div>
-
-  <!-- Slide Panel kerangka (boleh ada di semua halaman; app.js aman bila tak dipakai) -->
-  <div id="panelBackdrop" class="panel-backdrop"></div>
-  <aside id="slidePanel" class="slide-panel" aria-hidden="true">
-    <div class="slide-header">
-      <div>Panel</div>
-      <button id="closePanelBtn" class="icon-btn" aria-label="Tutup panel">✕</button>
-    </div>
-    <div class="slide-body">
-      <div class="row">
-        <div style="font-weight:600;margin-bottom:6px">Status</div>
-        <div id="statusText" class="last-checked">-</div>
-        <div id="lastCheckedText" class="last-checked">Terakhir diperiksa: -</div>
-      </div>
-    </div>
-  </aside>
-  <button id="slideHandle" class="slide-handle" aria-label="Buka panel">
-    <span id="handleIcon">chevron_left</span>
-  </button>
-
-  <!-- Hanya sumber JS global -->
-  <script type="module" src="app.js"></script>
+  <!-- Script utama -->
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

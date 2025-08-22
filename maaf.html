@@ -1,50 +1,19 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Maaf | CS Sedang Sibuk</title>
-  <link rel="stylesheet" href="main.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Silakan Coba Kembali</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
+  <link rel="stylesheet" href="./main.css">
 </head>
-<body>
-
-  <main class="centered-page">
-    <h1>Maaf, kami sedang melayani pelanggan lain</h1>
-    <p>Silakan menunggu. Jika sebelumnya Anda setuju masuk antrian, posisi Anda akan tampil di bawah ini.</p>
-
-    <!-- Info antrian dinamis & waktu berjalan (handled by app.js) -->
-    <div id="antrianPos" class="queue-pos" style="margin-top:10px;font-weight:600"></div>
-    <div id="antrianTimer" class="last-checked" style="margin-top:6px"></div>
-
-    <a href="index.html" class="btn btn-primary" style="margin-top:16px;display:inline-block;">Kembali</a>
-  </main>
-
-  <!-- Loading overlay -->
-  <div id="loading" class="loading" style="display:none;">
-    <div class="spinner"></div>
-    <div>Memuat…</div>
+<body class="simple-page maaf-page">
+  <div id="logo">
+    <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
   </div>
-
-  <!-- Slide Panel kerangka (opsional) -->
-  <div id="panelBackdrop" class="panel-backdrop"></div>
-  <aside id="slidePanel" class="slide-panel" aria-hidden="true">
-    <div class="slide-header">
-      <div>Panel</div>
-      <button id="closePanelBtn" class="icon-btn" aria-label="Tutup panel">✕</button>
-    </div>
-    <div class="slide-body">
-      <div class="row">
-        <div style="font-weight:600;margin-bottom:6px">Status</div>
-        <div id="statusText" class="last-checked">-</div>
-        <div id="lastCheckedText" class="last-checked">Terakhir diperiksa: -</div>
-      </div>
-    </div>
-  </aside>
-  <button id="slideHandle" class="slide-handle" aria-label="Buka panel">
-    <span id="handleIcon">chevron_left</span>
-  </button>
-
-  <!-- Hanya sumber JS global -->
-  <script type="module" src="app.js"></script>
+  <h1>Maaf Customer Service sedang melayani pelanggan.. 🙏</h1>
+  <p>Anda bisa menghubungi kembali nanti.</p>
+  <button class="simple-btn" onclick="window.location.href='./'">Coba Lagi</button>
+  <div id="footerNote">Terima kasih telah menggunakan layanan kami</div>
 </body>
 </html>
