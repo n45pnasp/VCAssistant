@@ -282,7 +282,7 @@ async function initAfterAuth() {
   // Cleanup ketika tab ditutup/refresh
   window.addEventListener("beforeunload", async () => {
     try {
-      // === PERKETAT: caller.html tidak bertindak sebagai callee
+      // caller.html tidak bertindak sebagai callee
       if (!isCallerPage && !isCaller) {
         await deleteCalleeCandidates();
       }
@@ -292,46 +292,53 @@ async function initAfterAuth() {
   const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
 
   if (!roomSnap.exists()) {
-    // Room belum dibuat oleh CS
+    // === ROOM BELUM DIBUAT → semuanya Offline ===
+    setOfflineUI();
+
     if (isCallerPage && startBtn) {
+      // Caller: hanya tombol Start
       startBtn.style.display = "inline-block";
       startBtn.disabled = false;
       startBtn.addEventListener("click", startCall);
     } else {
-      await alertModal("Customer Service belum memulai panggilan. Silakan coba lagi nanti.", "Belum Tersedia");
+      // Callee: beri tahu belum melayani
+      await alertModal("Customer Service belum memulai panggilan. Silakan coba lagi nanti.", "Belum Melayani");
       location.href = PAGES.thanks;
     }
-  } else {
-    const data = roomSnap.data();
 
-    if (isCallerPage && startBtn) {
-      startBtn.style.display = "inline-block";
-      startBtn.disabled = true; // room sudah ada, menunggu callee
-    }
+    updateButtonStates();
+    return; // penting: hentikan logika lanjutan
+  }
 
-    if (data?.offer && !data?.answer) {
-      // Ada offer → callee boleh join (caller tidak)
-      if (!isCallerPage) {
-        const name = await showNameInputModal();
-        if (!name || name.trim() === "") {
-          await alertModal("Nama wajib diisi untuk bergabung ke panggilan.", "Nama Diperlukan");
-          return;
-        }
-        sessionStorage.setItem("calleeName", name);
-        startCall(name).catch(async err => {
-          console.error("Gagal auto-join:", err);
-          await alertModal("Gagal auto-join. Silakan coba lagi.", "Kesalahan");
-        });
+  // === ROOM ADA ===
+  const data = roomSnap.data();
+
+  if (isCallerPage && startBtn) {
+    startBtn.style.display = "inline-block";
+    startBtn.disabled = true; // room sudah ada, menunggu/berjalan
+    // Caller boleh menampilkan info sedang melayani
+    const el = document.getElementById("currentRoom");
+    if (el) el.textContent = "Sedang melayani customer…";
+  }
+
+  if (data?.offer && !data?.answer) {
+    // Ada offer → callee boleh join (caller tidak)
+    if (!isCallerPage) {
+      const name = await showNameInputModal();
+      if (!name || name.trim() === "") {
+        await alertModal("Nama wajib diisi untuk bergabung ke panggilan.", "Nama Diperlukan");
+        return;
       }
-    } else if (!isCallerPage) {
-      // === HANYA CALLEE yang mendapat alert/redirect berikut
-      await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
-      location.href = PAGES.busy;
-    } else {
-      // === CALLER: tidak ada alert callee
-      const el = document.getElementById("currentRoom");
-      if (el) el.textContent = "Sedang melayani customer…";
+      sessionStorage.setItem("calleeName", name);
+      startCall(name).catch(async err => {
+        console.error("Gagal auto-join:", err);
+        await alertModal("Gagal auto-join. Silakan coba lagi.", "Kesalahan");
+      });
     }
+  } else if (!isCallerPage) {
+    // HANYA CALLEE yang mendapat alert/redirect 'sedang sibuk'
+    await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
+    location.href = PAGES.busy;
   }
 
   updateButtonStates();
@@ -771,6 +778,16 @@ const lastChecked   = document.getElementById('lastCheckedText');
 const spinnerDots   = document.getElementById('spinnerDots');
 const closeRoomBtn  = document.getElementById('closeRoomBtn');
 
+// === OFFLINE UI ===
+function setOfflineUI() {
+  const el = document.querySelector("#currentRoom");
+  if (el) el.textContent = "Offline";
+  const label = document.getElementById("calleeNameLabel");
+  if (label) label.style.display = "none";
+  if (statusText) statusText.textContent = "⚪ Offline: room belum dibuat.";
+  if (lastChecked) lastChecked.textContent = "Terakhir diperiksa: " + new Date().toLocaleTimeString();
+}
+
 function openPanel(){
   if (!slidePanel) return;
   slidePanel.classList.add('open');
@@ -814,6 +831,10 @@ window.addEventListener('touchend', ()=>{ touching=false; touchStartX=null; });
 async function checkRoomStatus(){
   if (!statusText || !lastChecked) return; // panel belum dipasang
   try{
+    // Cek dulu apakah room ada
+    const roomDoc = await getDoc(doc(db, 'rooms', ROOM_ID));
+    if (!roomDoc.exists()) { setOfflineUI(); return; }
+
     const callerRef = collection(db, 'rooms', ROOM_ID, 'callerCandidates');
     const calleeRef = collection(db, 'rooms', ROOM_ID, 'calleeCandidates');
 
