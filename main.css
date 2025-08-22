@@ -318,120 +318,126 @@ body {
   }
 }
 
-/* ===== Slide Panel (caller) ===== */
+/* =========================================================
+   Merged inline styles from HTML files (scoped per page)
+   Generated on request: moved from inline <style> to main.css
+   ========================================================= */
 
-    :root{
-      --panel-bg:#0d1418;
-      --panel-text:#e0e0e0;
-      --panel-muted:#9aa0a6;
-      --panel-accent:#f44336;
-      --panel-width: 320px;
-      --panel-shadow: 0 10px 30px rgba(0,0,0,.45);
-    }
-    /* ===== Slide Panel (kanan) ===== */
-    .slide-panel{
-      position: fixed; top:0; right:0; height:100vh;
-      width: var(--panel-width); max-width: 85vw;
-      background: var(--panel-bg); color: var(--panel-text);
-      transform: translateX(100%); transition: transform .28s ease;
-      z-index: 1000; display:flex; flex-direction:column;
-      box-shadow: var(--panel-shadow);
-      touch-action: pan-y;
-    }
-    .slide-panel.open{ transform: translateX(0); }
+/* ---------- Generic buttons (shared) ---------- */
+button.simple-btn { 
+  padding: 12px 26px; font-size: 16px; background: #007bff; color: #fff;
+  border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+}
+button.simple-btn:hover { background: #0056b3; }
 
-    .slide-header{
-      display:flex; align-items:center; gap:10px;
-      padding:14px 14px; border-bottom:1px solid rgba(255,255,255,.08);
-      font-weight:600;
-    }
-    .slide-body{ padding:16px; overflow:auto; }
-
-    .row{ margin-bottom:14px; }
-    .status{ font-size:15px; }
-    .last-checked{ font-size:12px; color: var(--panel-muted); }
-
-    .spinner{
-      margin-top:12px; display:none;
-      justify-content:center; align-items:center; gap:8px;
-    }
-    .dot{ width:8px; height:8px; border-radius:50%;
-      background: var(--panel-accent); animation: bounce 1.2s infinite ease-in-out; }
-    .dot:nth-child(2){ animation-delay:.2s }
-    .dot:nth-child(3){ animation-delay:.4s }
-    @keyframes bounce{ 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
-
-    .panel-actions{ display:flex; gap:8px; margin-top:8px; }
-    .btn-danger{
-      background: var(--panel-accent); color:#fff; border:none;
-      padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
-    }
-    .btn-danger:disabled{ opacity:.7; cursor:not-allowed; }
-    .note{ font-size:12px; color: var(--panel-muted); margin-top:10px; }
-
-    /* Handle/Tab untuk buka-tutup */
-    .slide-handle{
-      position: fixed; top: 50%; right: 0; transform: translateY(-50%);
-      z-index: 1001;
-      width: 36px; height: 72px; border-radius: 12px 0 0 12px;
-      background: #111b21; color:#e9edef; display:flex; align-items:center; justify-content:center;
-      border-left: 1px solid rgba(255,255,255,.08);
-      border-top: 1px solid rgba(255,255,255,.08);
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      box-shadow: 0 8px 20px rgba(0,0,0,.35);
-      cursor: pointer; user-select:none;
-    }
-    .slide-handle .material-icons{ font-size: 22px; }
-
-    /* Backdrop saat panel terbuka */
-    .panel-backdrop{
-      position: fixed; inset:0; background: rgba(0,0,0,.3);
-      opacity:0; visibility:hidden; transition: opacity .2s ease;
-      z-index: 999;
-    }
-    .panel-backdrop.show{ opacity:1; visibility:visible; }
-
-    /* Minor tweak agar watermark tidak ketutup handle */
-    #watermark-logo{ pointer-events: none; }
-  
-
-/* ===== Simple Pages (maaf.html & thanks.html) ===== */
-body.simple{
+/* ---------- Simple white info pages: maaf.html & thanks.html ---------- */
+body.simple-page {
   font-family: 'Roboto', sans-serif;
-  background:#fff; color:#333;
-  padding:40px 20px; text-align:center;
-  height:auto; overflow:auto;
+  background: #ffffff; color: #333333;
+  padding: 40px 20px; text-align: center;
 }
-body.simple #logo img{ width:110px; opacity:.9; margin-bottom:30px }
-body.simple h1{ font-size:24px; color:#222; margin-bottom:15px }
-body.simple p{ font-size:18px; color:#555; margin-bottom:30px }
-body.simple .btn-primary{
-  padding:12px 26px; font-size:16px; background:#007bff;
-  color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold;
-}
-body.simple .btn-primary:hover{ background:#0056b3 }
-body.simple #footerNote{ margin-top:40px; font-size:13px; color:#999 }
+.simple-page #logo img { width: 110px; opacity: 0.9; margin-bottom: 30px; }
+.simple-page h1 { font-size: 24px; color: #222222; margin-bottom: 15px; }
+.simple-page p  { font-size: 18px; color: #555555; margin-bottom: 30px; }
+.simple-page #footerNote { margin-top: 40px; font-size: 13px; color: #888888; }
 
-/* ===== Slide Panel: sections & queue ===== */
-.panel-sep{ border: none; border-top:1px solid rgba(255,255,255,.08); margin: 12px 0 }
-.section{ margin: 12px 0 10px }
-.section-title{ font-size:13px; color: var(--panel-muted); margin-bottom:6px; text-transform: uppercase; letter-spacing:.4px }
-.kpi{ font-size:28px; font-weight:800 }
-.queue-list{ font-size:14px; line-height:1.5 }
-.queue-list .last-checked{ color: var(--panel-muted); font-size:12px }
+/* ---------- "Maaf" specific overrides ---------- */
+body.maaf-page { /* inherits simple-page */ }
+body.maaf-page #footerNote { color: #999; } /* match original maaf.html */
 
-/* ===== Maaf page: queue card ===== */
-.queue-card{
-  max-width: 480px; margin: 24px auto 0; text-align:left;
-  border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px;
-  background: #fafafa;
+/* ---------- Close page (close.html) ---------- */
+body.close-page {
+  font-family: 'Roboto', sans-serif;
+  background-color: #0d1418; color: #e0e0e0;
+  padding: 40px 20px; text-align: center;
 }
-.queue-card .q-title{ font-weight:700; margin-bottom:10px; font-size:15px }
-.queue-card .q-row{ display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-top:1px dashed #e5e7eb }
-.queue-card .q-row:first-of-type{ border-top:none }
-.queue-card strong{ font-size:16px }
-@media (prefers-color-scheme: dark){
-  .queue-card{ background:#0f172a; border-color:#233; }
-  .queue-card .q-row{ border-top-color:#233 }
+.close-page #logo img { width: 110px; opacity: 0.9; margin-bottom: 20px; }
+.close-page h1 { font-size: 22px; color: #ffffff; margin-bottom: 20px; }
+.close-page #status { font-size: 18px; margin: 20px 0; }
+.close-page button {
+  padding: 12px 28px; font-size: 15px; margin: 10px;
+  border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
 }
+.close-page #closeBtn { background-color: #f44336; color: white; }
+.close-page #spinner { margin-top: 15px; display: none; justify-content: center; align-items: center; gap: 8px; }
+.close-page .dot { width: 8px; height: 8px; border-radius: 50%; background: #f44336; animation: bounce 1.2s infinite ease-in-out; }
+.close-page .dot:nth-child(2) { animation-delay: 0.2s; }
+.close-page .dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+.close-page #note { margin-top: 10px; font-size: 13px; color: #aaa; }
+.close-page #lastChecked { font-size: 13px; color: #777; margin-top: 5px; }
 
+/* ---------- Slide Panel (moved from caller.html inline style) ---------- */
+:root{
+  --panel-bg:#0d1418;
+  --panel-text:#e0e0e0;
+  --panel-muted:#9aa0a6;
+  --panel-accent:#f44336;
+  --panel-width: 320px;
+  --panel-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+/* Slide Panel (kanan) */
+.slide-panel{
+  position: fixed; top:0; right:0; height:100vh;
+  width: var(--panel-width); max-width: 85vw;
+  background: var(--panel-bg); color: var(--panel-text);
+  transform: translateX(100%); transition: transform .28s ease;
+  z-index: 1000; display:flex; flex-direction:column;
+  box-shadow: var(--panel-shadow);
+  touch-action: pan-y;
+}
+.slide-panel.open{ transform: translateX(0); }
+
+.slide-header{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 14px; border-bottom:1px solid rgba(255,255,255,.08);
+  font-weight:600;
+}
+.slide-body{ padding:16px; overflow:auto; }
+
+.row{ margin-bottom:14px; }
+.status{ font-size:15px; }
+.last-checked{ font-size:12px; color: var(--panel-muted); }
+
+.spinner{
+  margin-top:12px; display:none;
+  justify-content:center; align-items:center; gap:8px;
+}
+.dot{ width:8px; height:8px; border-radius:50%;
+  background: var(--panel-accent); animation: bounce 1.2s infinite ease-in-out; }
+.dot:nth-child(2){ animation-delay:.2s }
+.dot:nth-child(3){ animation-delay:.4s }
+@keyframes bounce{ 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+
+.panel-actions{ display:flex; gap:8px; margin-top:8px; }
+.btn-danger{
+  background: var(--panel-accent); color:#fff; border:none;
+  padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
+}
+.btn-danger:disabled{ opacity:.7; cursor:not-allowed; }
+.note{ font-size:12px; color: var(--panel-muted); margin-top:10px; }
+
+/* Handle/Tab untuk buka-tutup */
+.slide-handle{
+  position: fixed; top: 50%; right: 0; transform: translateY(-50%);
+  z-index: 1001;
+  width: 36px; height: 72px; border-radius: 12px 0 0 12px;
+  background: #111b21; color:#e9edef; display:flex; align-items:center; justify-content:center;
+  border-left: 1px solid rgba(255,255,255,.08);
+  border-top: 1px solid rgba(255,255,255,.08);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 8px 20px rgba(0,0,0,.35);
+  cursor: pointer; user-select:none;
+}
+.slide-handle .material-icons{ font-size: 22px; }
+
+/* Backdrop saat panel terbuka */
+.panel-backdrop{
+  position: fixed; inset:0; background: rgba(0,0,0,.3);
+  opacity:0; visibility:hidden; transition: opacity .2s ease;
+  z-index: 999;
+}
+.panel-backdrop.show{ opacity:1; visibility:visible; }
+
+/* Prevent handle from blocking logo clicks */
+#watermark-logo{ pointer-events: none; }
