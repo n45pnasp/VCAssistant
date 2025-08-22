@@ -70,6 +70,8 @@ let wasCalleeConnected = false;
 let wasCallerConnected = false;
 let callStartTime = null;
 let callTimerInterval = null;
+let oneMinuteWarningShown = false;
+const MAX_CALL_DURATION_SEC = 10 * 60;
 const ROOM_ID = (window.ROOM_ID || "cs-room"); // bisa di-overwrite dari HTML bila perlu
 
 // =====================================================
@@ -606,6 +608,7 @@ async function fetchOrCreateCallStartTime() {
 function startCallTimer(startTimeMs) {
   if (callTimerInterval) return;
   callStartTime = startTimeMs ?? Date.now();
+  oneMinuteWarningShown = false;
   const timerEl = document.getElementById("callTimer");
   if (timerEl) timerEl.style.display = "block";
   updateCallTimer();
@@ -615,10 +618,18 @@ function startCallTimer(startTimeMs) {
 function updateCallTimer() {
   if (!callStartTime) return;
   const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+  const remaining = MAX_CALL_DURATION_SEC - elapsed;
   const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
   const seconds = String(elapsed % 60).padStart(2, "0");
   const timerEl = document.getElementById("callTimer");
   if (timerEl) timerEl.textContent = `${minutes}:${seconds}`;
+  if (remaining <= 60 && remaining > 0 && !oneMinuteWarningShown) {
+    oneMinuteWarningShown = true;
+    alertModal("Panggilan akan berakhir dalam 1 menit.", "Peringatan");
+  }
+  if (remaining <= 0) {
+    hangUp();
+  }
 }
 
 function stopCallTimer() {
@@ -627,6 +638,7 @@ function stopCallTimer() {
     callTimerInterval = null;
   }
   callStartTime = null;
+  oneMinuteWarningShown = false;
   const timerEl = document.getElementById("callTimer");
   if (timerEl) {
     timerEl.style.display = "none";
