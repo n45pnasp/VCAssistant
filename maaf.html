@@ -12,8 +12,63 @@
     <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
   </div>
   <h1>Maaf Customer Service sedang melayani pelanggan.. 🙏</h1>
-  <p>Anda bisa menghubungi kembali nanti.</p>
+  <div class="busy-info">
+    <div>Waktu panggilan yang berlangsung: <span id="busyTimer">00:00</span></div>
+    <div>Anda antrian ke-<span id="queuePosition">-</span></div>
+  </div>
   <button class="simple-btn" onclick="window.location.href='./'">Coba Lagi</button>
   <div id="footerNote">Terima kasih telah menggunakan layanan kami</div>
+
+  <script type="module">
+    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAjqMqmKUDPWHkv19Dig7PnUpHMzNf9J1A",
+      authDomain: "onlinecsbwx.firebaseapp.com",
+      projectId: "onlinecsbwx",
+      storageBucket: "onlinecsbwx.appspot.com",
+      messagingSenderId: "317019843909",
+      appId: "1:317019843909:web:2d5b2b2c9dd118e0ce622c"
+    };
+
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const ROOM_ID = window.ROOM_ID || "cs-room";
+    const params = new URLSearchParams(location.search);
+    const myName = params.get("name") || sessionStorage.getItem("queueName") || "";
+    if (myName) sessionStorage.setItem("queueName", myName);
+
+    let startTime = null;
+    let timerInterval = null;
+    const timerEl = document.getElementById("busyTimer");
+    const posEl = document.getElementById("queuePosition");
+
+    onSnapshot(doc(db, "rooms", ROOM_ID), snap => {
+      startTime = snap.data()?.callStartTime || null;
+      if (startTime && !timerInterval) {
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
+      }
+    });
+
+    onSnapshot(doc(db, "queues", ROOM_ID), snap => {
+      const data = snap.data() || {};
+      const list = data.list || [];
+      const idx = list.findIndex(n => n === myName);
+      posEl.textContent = idx >= 0 ? idx + 1 : "-";
+      if (data.allowed === myName) {
+        window.location.href = `./?name=${encodeURIComponent(myName)}`;
+      }
+    });
+
+    function updateTimer() {
+      if (!startTime) return;
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+      const s = String(elapsed % 60).padStart(2, "0");
+      timerEl.textContent = `${m}:${s}`;
+    }
+  </script>
 </body>
 </html>

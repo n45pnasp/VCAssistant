@@ -2,7 +2,8 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import {
   getFirestore, doc, setDoc, getDoc, deleteDoc, deleteField,
-  collection, addDoc, onSnapshot, getDocs
+  updateDoc, collection, addDoc, onSnapshot, getDocs,
+  arrayUnion, arrayRemove
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 import { 
   getAuth, signInAnonymously, onAuthStateChanged,
@@ -295,6 +296,11 @@ async function initAfterAuth() {
   if (!isCallerPage && startBtn) startBtn.remove();
   if (hangupBtn) hangupBtn.addEventListener("click", hangUp);
 
+  if (isCallerPage) {
+    listenQueueForCaller();
+    document.getElementById("allowNextBtn")?.addEventListener("click", allowNextCallee);
+  }
+
   // Cleanup ketika tab ditutup/refresh
   window.addEventListener("beforeunload", async () => {
     try {
@@ -324,15 +330,45 @@ async function initAfterAuth() {
       startBtn.disabled = true; // room sudah ada, menunggu callee
     }
 
-    if (data?.offer && !data?.answer) {
-      // Ada offer → callee boleh join
+    if (data?.offer && data?.answer) {
+      // Sedang melayani pelanggan lain
       if (!isCallerPage) {
         const name = await showNameInputModal();
+        if (!name) { location.href = PAGES.thanks; return; }
+        sessionStorage.setItem("queueName", name);
+        const join = await showAppModal({
+          title: "Sedang Sibuk",
+          message: "Panggilan sedang berlangsung. Ingin masuk antrian?",
+          okText: "Ya",
+          cancelText: "Tidak"
+        });
+        if (join) {
+          await addToQueue(name);
+          location.href = `${PAGES.busy}?name=${encodeURIComponent(name)}`;
+        } else {
+          location.href = PAGES.thanks;
+        }
+      }
+    } else if (data?.offer && !data?.answer) {
+      // Ada offer → callee boleh join bila diizinkan
+      if (!isCallerPage) {
+        let name = new URLSearchParams(location.search).get("name") || sessionStorage.getItem("queueName");
+        if (!name) name = await showNameInputModal();
         if (!name || name.trim() === "") {
           await alertModal("Nama wajib diisi untuk bergabung ke panggilan.", "Nama Diperlukan");
           return;
         }
         sessionStorage.setItem("calleeName", name);
+        const qSnap = await getDoc(doc(db, "queues", ROOM_ID));
+        const qData = qSnap.data() || {};
+        const allowed = qData.allowed;
+        const list = qData.list || [];
+        if ((allowed && allowed !== name) || (!allowed && list.length > 0)) {
+          await addToQueue(name);
+          await alertModal("Maaf, Anda belum mendapat giliran.", "Sedang Menunggu");
+          location.href = `${PAGES.busy}?name=${encodeURIComponent(name)}`;
+          return;
+        }
         startCall(name).catch(async err => {
           console.error("Gagal auto-join:", err);
           await alertModal("Gagal auto-join. Silakan coba lagi.", "Kesalahan");
@@ -493,6 +529,8 @@ async function startCall(calleeNameFromInit = null) {
           calleeName: namaCallee
         }, { merge: true });
 
+        await setDoc(doc(db, "queues", ROOM_ID), { allowed: deleteField() }, { merge: true });
+
         // ======================================================
         // NOVAN-LOCK: DENGARKAN CANDIDATE CALLER — JANGAN UBAH
         // ======================================================
@@ -645,6 +683,51 @@ function stopCallTimer() {
     timerEl.textContent = "00:00";
   }
   setDoc(doc(db, "rooms", ROOM_ID), { callStartTime: deleteField() }, { merge: true }).catch(() => {});
+}
+
+// ==================== QUEUE MANAGEMENT ====================
+async function addToQueue(name) {
+  const qRef = doc(db, "queues", ROOM_ID);
+  await setDoc(qRef, { list: arrayUnion(name) }, { merge: true });
+}
+
+function listenQueueForCaller() {
+  const listEl = document.getElementById("queueList");
+  const allowBtn = document.getElementById("allowNextBtn");
+  if (!listEl) return;
+  const qRef = doc(db, "queues", ROOM_ID);
+  onSnapshot(qRef, (snap) => {
+    const data = snap.data() || {};
+    const list = data.list || [];
+    if (list.length) {
+      listEl.innerHTML = list
+        .map((n, i) => `<li>${i + 1}. ${formatName(n)}</li>`)
+        .join("");
+    } else {
+      listEl.innerHTML = "<li>(Kosong)</li>";
+    }
+    if (allowBtn) allowBtn.disabled = list.length === 0;
+  });
+}
+
+async function allowNextCallee() {
+  try {
+    const qRef = doc(db, "queues", ROOM_ID);
+    const snap = await getDoc(qRef);
+    const list = snap.data()?.list || [];
+    if (!list.length) {
+      await alertModal("Tidak ada antrian.");
+      return;
+    }
+    const next = list[0];
+    await startCall();
+    await updateDoc(qRef, {
+      list: arrayRemove(next),
+      allowed: next,
+    });
+  } catch (e) {
+    console.warn("allowNextCallee error", e);
+  }
 }
 
 // ==================== MONITOR STATUS (untuk label kecil di halaman) ====================
