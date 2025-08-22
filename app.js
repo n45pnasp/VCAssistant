@@ -1,7 +1,7 @@
 // ==================== FIREBASE SETUP ====================
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
 import {
-  getFirestore, doc, setDoc, getDoc, deleteDoc,
+  getFirestore, doc, setDoc, getDoc, deleteDoc, deleteField,
   collection, addDoc, onSnapshot, getDocs
 } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 import { 
@@ -590,9 +590,22 @@ function showNameInputModal() {
 }
 
 // ==================== CALL TIMER ====================
-function startCallTimer() {
+async function fetchOrCreateCallStartTime() {
+  const roomDocRef = doc(db, "rooms", ROOM_ID);
+  let docSnap = await getDoc(roomDocRef);
+  let start = docSnap.data()?.callStartTime;
+  if (!start) {
+    const now = Date.now();
+    await setDoc(roomDocRef, { callStartTime: now }, { merge: true });
+    docSnap = await getDoc(roomDocRef);
+    start = docSnap.data()?.callStartTime || now;
+  }
+  return start;
+}
+
+function startCallTimer(startTimeMs) {
   if (callTimerInterval) return;
-  callStartTime = Date.now();
+  callStartTime = startTimeMs ?? Date.now();
   const timerEl = document.getElementById("callTimer");
   if (timerEl) timerEl.style.display = "block";
   updateCallTimer();
@@ -619,6 +632,7 @@ function stopCallTimer() {
     timerEl.style.display = "none";
     timerEl.textContent = "00:00";
   }
+  setDoc(doc(db, "rooms", ROOM_ID), { callStartTime: deleteField() }, { merge: true }).catch(() => {});
 }
 
 // ==================== MONITOR STATUS (untuk label kecil di halaman) ====================
@@ -636,7 +650,7 @@ function monitorConnectionStatus() {
       if (!snapshot.empty) {
         if (el) el.textContent = "Terkoneksi";
         if (!wasCallerConnected) {
-          startCallTimer();
+          fetchOrCreateCallStartTime().then(startCallTimer);
           wasCallerConnected = true;
         }
       } else if (snapshot.empty && wasCallerConnected) {
@@ -666,7 +680,7 @@ function monitorConnectionStatus() {
         });
 
         wasCalleeConnected = true;
-        startCallTimer();
+        fetchOrCreateCallStartTime().then(startCallTimer);
       } else if (snapshot.empty && wasCalleeConnected) {
         showCalleeDisconnected();
         wasCalleeConnected = false;
