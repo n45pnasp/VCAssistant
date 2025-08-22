@@ -412,3 +412,26 @@ body.simple .btn-primary{
 body.simple .btn-primary:hover{ background:#0056b3 }
 body.simple #footerNote{ margin-top:40px; font-size:13px; color:#999 }
 
+/* ===== Slide Panel: sections & queue ===== */
+.panel-sep{ border: none; border-top:1px solid rgba(255,255,255,.08); margin: 12px 0 }
+.section{ margin: 12px 0 10px }
+.section-title{ font-size:13px; color: var(--panel-muted); margin-bottom:6px; text-transform: uppercase; letter-spacing:.4px }
+.kpi{ font-size:28px; font-weight:800 }
+.queue-list{ font-size:14px; line-height:1.5 }
+.queue-list .last-checked{ color: var(--panel-muted); font-size:12px }
+
+/* ===== Maaf page: queue card ===== */
+.queue-card{
+  max-width: 480px; margin: 24px auto 0; text-align:left;
+  border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 16px;
+  background: #fafafa;
+}
+.queue-card .q-title{ font-weight:700; margin-bottom:10px; font-size:15px }
+.queue-card .q-row{ display:flex; align-items:center; justify-content:space-between; padding:6px 0; border-top:1px dashed #e5e7eb }
+.queue-card .q-row:first-of-type{ border-top:none }
+.queue-card strong{ font-size:16px }
+@media (prefers-color-scheme: dark){
+  .queue-card{ background:#0f172a; border-color:#233; }
+  .queue-card .q-row{ border-top-color:#233 }
+}
+
