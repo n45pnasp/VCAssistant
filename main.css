@@ -1,25 +1,92 @@
-/* ===== GLOBAL STYLES ===== */
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+:root{
+  --bg:#000;
+  --fg:#fff;
+  --muted:#9aa0a6;
+  --accent:#0ea5e9;
+  --danger:#f44336;
+  --panel-bg:#0d1418;
+  --panel-text:#e0e0e0;
+  --panel-muted:#9aa0a6;
+  --panel-accent:#f44336;
+  --panel-width: 320px;
+  --panel-shadow: 0 10px 30px rgba(0,0,0,.45);
+}
+
+*{ box-sizing:border-box; }
+
+html, body{
+  height:100%;
+}
+
 body {
   margin: 0;
   padding: 0;
-  background: #000;
-  color: #fff;
-  font-family: 'Roboto', sans-serif;
-  height: 100vh;
-  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden; /* app layout fullscreen */
 }
 
-#videos {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  background: #000;
+/* =========================================================
+   TOP BAR
+   ========================================================= */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 16px;
+  background: rgba(17,17,17,.85);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  backdrop-filter: blur(6px);
 }
+.topbar h1{ font-size:16px; margin:0; letter-spacing:.3px; }
+.topbar .status{ display:flex; gap:10px; align-items:center; color:#a7f3d0; font-weight:600; }
+
+/* Room & Callee badges */
+#currentRoom {
+  background: rgba(0, 0, 0, 0.5);
+  color: #00ff00;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+#calleeNameLabel {
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  display: none;
+}
+
+/* =========================================================
+   LAYOUT & VIDEO
+   ========================================================= */
+.layout{
+  display:flex;
+  flex-direction:column;
+  height: calc(100vh - 58px); /* minus topbar */
+}
+
+.video-wrap{
+  position:relative;
+  flex: 1 1 auto;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px;
+  background:#000;
+}
+
+.video-col{ position:relative; background:#000; border:1px solid rgba(255,255,255,.06); border-radius:10px; overflow:hidden; }
+.video-col h2{ position:absolute; top:8px; left:10px; margin:0; font-size:13px; background:rgba(0,0,0,.45); padding:4px 8px; border-radius:8px; z-index:5; }
 
 #remoteVideo {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  background:#000;
 }
 
 #localVideo {
@@ -37,7 +104,7 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* ===== WATERMARK LOGO ===== */
+/* Watermark (opsional) */
 #watermark-logo {
   position: absolute;
   top: 20px;
@@ -49,10 +116,48 @@ body {
   height: auto;
   opacity: 0.85;
   z-index: 999;
-  pointer-events: none;
+  pointer-events: none; /* prevent click capture */
 }
 
-/* ===== CONTROL BUTTONS ===== */
+/* =========================================================
+   CONTROLS & BUTTONS
+   ========================================================= */
+.controls{
+  flex: 0 0 auto;
+  display:flex; gap: 10px; justify-content:center; align-items:center;
+  padding: 10px 16px 16px;
+}
+
+.btn{
+  appearance:none;
+  border:none;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-weight:700;
+  cursor:pointer;
+  transition: transform .12s ease, opacity .12s ease, background .2s ease;
+  color:#fff;
+  min-width: 120px;
+}
+.btn:disabled{ opacity:.6; cursor:not-allowed; transform:none !important; }
+.btn:active{ transform: translateY(1px) scale(.99); }
+
+.btn-primary{ background: var(--accent); }
+.btn-primary:hover{ background:#0284c7; }
+
+.btn-danger{ background: var(--danger); }
+.btn-danger:hover{ background:#d32f2f; }
+
+.icon-btn{
+  background: transparent;
+  color:#e9edef;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* Legacy floating group (if used) */
 #buttons {
   position: fixed;
   bottom: 20px;
@@ -66,317 +171,103 @@ body {
   backdrop-filter: blur(10px);
   border-radius: 50px;
 }
-
 #buttons .mdc-button {
-  min-width: 0;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  min-width: 0; width: 50px; height: 50px; border-radius: 50%;
+  padding: 0; background: rgba(255, 255, 255, 0.1); color: white;
+  display: flex; justify-content: center; align-items: center;
   transition: all 0.3s ease;
 }
+#buttons .mdc-button:disabled { opacity: 0.5; transform: scale(0.95); }
+.mdc-button__label { display:none; }
+.mdc-button__icon { margin:0 !important; font-size:24px; }
 
-#buttons .mdc-button:disabled {
-  opacity: 0.5;
-  transform: scale(0.95);
+#hangupBtn { background: var(--danger) !important; }
+#hangupBtn:not(:disabled){ animation: pulse-red 1.5s infinite; }
+
+/* =========================================================
+   MODAL (custom – dipakai app.js & nameModal)
+   ========================================================= */
+.modal{
+  display: none; /* shown by JS */
+  position: fixed; inset:0; z-index:9999;
+  background: rgba(0,0,0,.6);
+  align-items:center; justify-content:center;
+  padding: 16px;
+}
+.modal[style*="display: flex"]{ display:flex; } /* app.js set style="display:flex" */
+
+.modal-dialog{
+  width: min(420px, 92vw);
+  background: #111b21;
+  color: #e9edef;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  overflow: hidden;
+  animation: fadeIn .25s ease;
 }
 
-#hangupBtn {
-  background: #f44336 !important;
+.modal-header{
+  display:flex; align-items:center; gap:10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  font-weight: 700;
+}
+.modal-body{ padding:16px; line-height:1.5; color:#d1d7db; }
+.modal-actions{
+  display:flex; gap:10px; justify-content:flex-end; padding: 12px 16px;
 }
 
-#hangupBtn:not(:disabled) {
-  animation: pulse-red 1.5s infinite;
+.input{
+  width:100%;
+  background:#0d1418;
+  color:#e9edef;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;
+  padding:10px 12px;
+  outline:none;
 }
 
-.mdc-button__label {
-  display: none;
-}
-
-.mdc-button__icon {
-  margin: 0 !important;
-  font-size: 24px;
-}
-
-/* ===== ROOM STATUS ===== */
-#currentRoom {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  color: #00ff00;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  z-index: 100;
-}
-
-/* ===== NAME CALLEE STATUS ===== */
-#calleeNameLabel {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(0, 0, 0, 0.6);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 14px;
-  z-index: 100;
-  display: none;
-}
-
-/* ===== POP UP NAME CALLEE (Dark iOS Style Refined) ===== */
-
-/* Modal Background */
-.modal {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-/* Modal Content */
-.modal-content {
-  background-color: #1c1c1e;
-  color: white;
-  padding: 24px 20px 0;
-  border-radius: 13px;
-  width: 90%;
-  max-width: 250px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
-  text-align: center;
-  animation: fadeIn 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-/* Heading */
-.modal-content h2 {
-  font-size: 17px;
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-/* Description */
-.modal-content p {
-  font-size: 13px;
-  color: #c7c7cc;
-  margin-bottom: 18px;
-}
-
-/* Input */
-#calleeNameInput {
-  padding: 10px 14px;
-  font-size: 15px;
-  width: 100%;
-  margin-bottom: 20px;
-  border: 1px solid #3a3a3c;
-  border-radius: 10px;
-  background-color: #2c2c2e;
-  color: white;
-  outline: none;
-  box-sizing: border-box;
-}
-
-/* Buttons Container */
-.modal-buttons {
-  display: flex;
-  border-top: 1px solid #2c2c2e;
-  height: 45px;
-}
-
-/* Button Base Style */
-.modal-button {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 500;
-  color: #0a84ff;
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-right: 1px solid #2c2c2e;
-  transition: background-color 0.2s ease;
-  line-height: 45px;
-}
-
-/* Last button no border-right */
-.modal-button:last-child {
-  border-right: none;
-}
-
-/* Hover Effect */
-.modal-button:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Fade In Animation */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity:.0; transform: translateY(4px) scale(.98); }
+  to   { opacity:1;  transform: translateY(0)    scale(1); }
 }
 
+/* iOS-like simple modal (legacy names, if ever used) */
+.modal-content{ background:#1c1c1e; color:#fff; padding:24px 20px 0; border-radius:13px; width:90%; max-width:250px; text-align:center; }
+.modal-buttons{ display:flex; border-top:1px solid #2c2c2e; height:45px; }
+.modal-button{ flex:1; font-size:16px; font-weight:500; color:#0a84ff; background:none; border:none; cursor:pointer; border-right:1px solid #2c2c2e; line-height:45px; }
+.modal-button:last-child{ border-right:none; }
+.modal-button:hover{ background: rgba(255,255,255,.05); }
 
-
-
-
-
-/* ===== LOADING OVERLAY ===== */
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
+/* =========================================================
+   LOADING OVERLAY
+   ========================================================= */
+#loading.loading,
+.loading{
+  position: fixed; inset:0;
+  background: rgba(0,0,0,.7);
+  display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
+#loading.loading[style*="display: flex"], .loading[style*="display: flex"]{ display:flex; }
 
-.loading-spinner {
-  border: 5px solid rgba(255, 255, 255, 0.3);
+.spinner{
+  width: 52px; height: 52px;
+  border: 5px solid rgba(255,255,255,.28);
+  border-top-color: var(--accent);
   border-radius: 50%;
-  border-top: 5px solid #4CAF50;
-  width: 50px;
-  height: 50px;
   animation: spin 1s linear infinite;
+  margin-bottom: 10px;
 }
-
-#startCallBtn {
-  display: none;
-}
-
-.loading-text {
-  margin-top: 15px;
-  color: white;
-  font-size: 16px;
-}
-
-/* ===== ANIMATIONS ===== */
-@keyframes pulse-red {
-  0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  #localVideo {
-    width: 30%;
-    max-width: 120px;
-    bottom: 100px;
-    right: 15px;
-  }
-
-  #buttons {
-    padding: 10px 16px;
-  }
-
-  #buttons .mdc-button {
-    width: 45px;
-    height: 45px;
-  }
-
-  #watermark-logo {
-    width: 25vw;
-    top: 10px;
-  }
-}
-
-@media (min-width: 1200px) {
-  #localVideo {
-    width: 20%;
-    max-width: 200px;
-    right: 30px;
-  }
-
-  #watermark-logo {
-    max-width: 200px;
-  }
-}
+.loading .spinner + div{ color:#fff; opacity:.9; }
 
 /* =========================================================
-   Merged inline styles from HTML files (scoped per page)
-   Generated on request: moved from inline <style> to main.css
+   SLIDE PANEL (kanan)
    ========================================================= */
-
-/* ---------- Generic buttons (shared) ---------- */
-button.simple-btn { 
-  padding: 12px 26px; font-size: 16px; background: #007bff; color: #fff;
-  border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
-}
-button.simple-btn:hover { background: #0056b3; }
-
-/* ---------- Simple white info pages: maaf.html & thanks.html ---------- */
-body.simple-page {
-  font-family: 'Roboto', sans-serif;
-  background: #ffffff; color: #333333;
-  padding: 40px 20px; text-align: center;
-}
-.simple-page #logo img { width: 110px; opacity: 0.9; margin-bottom: 30px; }
-.simple-page h1 { font-size: 24px; color: #222222; margin-bottom: 15px; }
-.simple-page p  { font-size: 18px; color: #555555; margin-bottom: 30px; }
-.simple-page #footerNote { margin-top: 40px; font-size: 13px; color: #888888; }
-
-/* ---------- "Maaf" specific overrides ---------- */
-body.maaf-page { /* inherits simple-page */ }
-body.maaf-page #footerNote { color: #999; } /* match original maaf.html */
-
-/* ---------- Close page (close.html) ---------- */
-body.close-page {
-  font-family: 'Roboto', sans-serif;
-  background-color: #0d1418; color: #e0e0e0;
-  padding: 40px 20px; text-align: center;
-}
-.close-page #logo img { width: 110px; opacity: 0.9; margin-bottom: 20px; }
-.close-page h1 { font-size: 22px; color: #ffffff; margin-bottom: 20px; }
-.close-page #status { font-size: 18px; margin: 20px 0; }
-.close-page button {
-  padding: 12px 28px; font-size: 15px; margin: 10px;
-  border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
-}
-.close-page #closeBtn { background-color: #f44336; color: white; }
-.close-page #spinner { margin-top: 15px; display: none; justify-content: center; align-items: center; gap: 8px; }
-.close-page .dot { width: 8px; height: 8px; border-radius: 50%; background: #f44336; animation: bounce 1.2s infinite ease-in-out; }
-.close-page .dot:nth-child(2) { animation-delay: 0.2s; }
-.close-page .dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
-.close-page #note { margin-top: 10px; font-size: 13px; color: #aaa; }
-.close-page #lastChecked { font-size: 13px; color: #777; margin-top: 5px; }
-
-/* ---------- Slide Panel (moved from caller.html inline style) ---------- */
-:root{
-  --panel-bg:#0d1418;
-  --panel-text:#e0e0e0;
-  --panel-muted:#9aa0a6;
-  --panel-accent:#f44336;
-  --panel-width: 320px;
-  --panel-shadow: 0 10px 30px rgba(0,0,0,.45);
-}
-/* Slide Panel (kanan) */
 .slide-panel{
   position: fixed; top:0; right:0; height:100vh;
   width: var(--panel-width); max-width: 85vw;
@@ -399,22 +290,16 @@ body.close-page {
 .status{ font-size:15px; }
 .last-checked{ font-size:12px; color: var(--panel-muted); }
 
-.spinner{
+.spinnerDots{
   margin-top:12px; display:none;
   justify-content:center; align-items:center; gap:8px;
 }
-.dot{ width:8px; height:8px; border-radius:50%;
-  background: var(--panel-accent); animation: bounce 1.2s infinite ease-in-out; }
+.dot{ width:8px; height:8px; border-radius:50%; background: var(--panel-accent); animation: bounce 1.2s infinite ease-in-out; }
 .dot:nth-child(2){ animation-delay:.2s }
 .dot:nth-child(3){ animation-delay:.4s }
 @keyframes bounce{ 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
 
 .panel-actions{ display:flex; gap:8px; margin-top:8px; }
-.btn-danger{
-  background: var(--panel-accent); color:#fff; border:none;
-  padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
-}
-.btn-danger:disabled{ opacity:.7; cursor:not-allowed; }
 .note{ font-size:12px; color: var(--panel-muted); margin-top:10px; }
 
 /* Handle/Tab untuk buka-tutup */
@@ -429,7 +314,7 @@ body.close-page {
   box-shadow: 0 8px 20px rgba(0,0,0,.35);
   cursor: pointer; user-select:none;
 }
-.slide-handle .material-icons{ font-size: 22px; }
+#handleIcon{ font-family: ui-sans-serif, system-ui; font-size:12px; opacity:.8; }
 
 /* Backdrop saat panel terbuka */
 .panel-backdrop{
@@ -439,5 +324,75 @@ body.close-page {
 }
 .panel-backdrop.show{ opacity:1; visibility:visible; }
 
-/* Prevent handle from blocking logo clicks */
-#watermark-logo{ pointer-events: none; }
+/* =========================================================
+   TEXT BADGES / AUX
+   ========================================================= */
+.calltime{ margin: 8px 16px 16px; opacity:.9; }
+.queue-pos{ margin: 8px 16px 0; }
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(244, 67, 54, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 67, 54, 0); }
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 900px){
+  .video-wrap{ grid-template-columns: 1fr; }
+  #localVideo{
+    width: 30%;
+    max-width: 120px;
+    bottom: 100px;
+    right: 15px;
+  }
+}
+@media (min-width: 1200px) {
+  #localVideo { width: 20%; max-width: 200px; right: 30px; }
+  #watermark-logo { max-width: 200px; }
+}
+
+/* =========================================================
+   LEGACY / SIMPLE PAGES (opsional)
+   ========================================================= */
+body.simple-page {
+  background: #ffffff; color: #333333;
+  padding: 40px 20px; text-align: center;
+}
+.simple-page #logo img { width: 110px; opacity: 0.9; margin-bottom: 30px; }
+.simple-page h1 { font-size: 24px; color: #222222; margin-bottom: 15px; }
+.simple-page p  { font-size: 18px; color: #555555; margin-bottom: 30px; }
+.simple-page #footerNote { margin-top: 40px; font-size: 13px; color: #888888; }
+body.maaf-page #footerNote { color: #999; }
+
+/* Close page (opsional) */
+body.close-page {
+  background-color: #0d1418; color: #e0e0e0;
+  padding: 40px 20px; text-align: center;
+}
+.close-page #logo img { width: 110px; opacity: 0.9; margin-bottom: 20px; }
+.close-page h1 { font-size: 22px; color: #ffffff; margin-bottom: 20px; }
+.close-page #status { font-size: 18px; margin: 20px 0; }
+.close-page button {
+  padding: 12px 28px; font-size: 15px; margin: 10px;
+  border: none; border-radius: 6px; cursor: pointer; font-weight: bold;
+}
+.close-page #closeBtn { background-color: var(--danger); color: white; }
+.close-page #spinner { margin-top: 15px; display: none; justify-content: center; align-items: center; gap: 8px; }
+.close-page .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: bounce 1.2s infinite ease-in-out; }
+.close-page .dot:nth-child(2) { animation-delay: 0.2s; }
+.close-page .dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* =========================================================
+   COMPATIBILITY STUBS (jaga agar tidak error jika HTML lama ada)
+   ========================================================= */
+#videos { position: relative; width: 100%; height: 100vh; background: #000; }
+#startCallBtn { display: none; } /* akan dioverride inline style oleh app.js saat perlu */
