@@ -116,6 +116,18 @@ body {
   z-index: 100;
 }
 
+#callTimer {
+  position: fixed;
+  top: 60px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  z-index: 100;
+}
+
 /* ===== NAME CALLEE STATUS ===== */
 #calleeNameLabel {
   position: absolute;

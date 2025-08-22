@@ -67,6 +67,9 @@ let peerConnection = null;
 let roomRef = null;
 let isCaller = false;
 let wasCalleeConnected = false;
+let wasCallerConnected = false;
+let callStartTime = null;
+let callTimerInterval = null;
 const ROOM_ID = (window.ROOM_ID || "cs-room"); // bisa di-overwrite dari HTML bila perlu
 
 // =====================================================
@@ -586,16 +589,60 @@ function showNameInputModal() {
   });
 }
 
+// ==================== CALL TIMER ====================
+function startCallTimer() {
+  if (callTimerInterval) return;
+  callStartTime = Date.now();
+  const timerEl = document.getElementById("callTimer");
+  if (timerEl) timerEl.style.display = "block";
+  updateCallTimer();
+  callTimerInterval = setInterval(updateCallTimer, 1000);
+}
+
+function updateCallTimer() {
+  if (!callStartTime) return;
+  const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+  const minutes = String(Math.floor(elapsed / 60)).padStart(2, "0");
+  const seconds = String(elapsed % 60).padStart(2, "0");
+  const timerEl = document.getElementById("callTimer");
+  if (timerEl) timerEl.textContent = `${minutes}:${seconds}`;
+}
+
+function stopCallTimer() {
+  if (callTimerInterval) {
+    clearInterval(callTimerInterval);
+    callTimerInterval = null;
+  }
+  callStartTime = null;
+  const timerEl = document.getElementById("callTimer");
+  if (timerEl) {
+    timerEl.style.display = "none";
+    timerEl.textContent = "00:00";
+  }
+}
+
 // ==================== MONITOR STATUS (untuk label kecil di halaman) ====================
 function monitorConnectionStatus() {
   const callerCandidatesRef = collection(db, "rooms", ROOM_ID, "callerCandidates");
   const calleeCandidatesRef = collection(db, "rooms", ROOM_ID, "calleeCandidates");
 
   onSnapshot(callerCandidatesRef, (snapshot) => {
-    if (!isCaller) return;
-    if (!snapshot.empty) {
-      const el = document.querySelector("#currentRoom");
-      if (el) el.textContent = "Online";
+    const el = document.querySelector("#currentRoom");
+    if (isCaller) {
+      if (!snapshot.empty) {
+        if (el) el.textContent = "Online";
+      }
+    } else {
+      if (!snapshot.empty) {
+        if (el) el.textContent = "Terkoneksi";
+        if (!wasCallerConnected) {
+          startCallTimer();
+          wasCallerConnected = true;
+        }
+      } else if (snapshot.empty && wasCallerConnected) {
+        stopCallTimer();
+        wasCallerConnected = false;
+      }
     }
   });
 
@@ -619,11 +666,13 @@ function monitorConnectionStatus() {
         });
 
         wasCalleeConnected = true;
+        startCallTimer();
       } else if (snapshot.empty && wasCalleeConnected) {
         showCalleeDisconnected();
         wasCalleeConnected = false;
         const label = document.getElementById("calleeNameLabel");
         if (label) label.style.display = "none";
+        stopCallTimer();
       }
     } else {
       if (!snapshot.empty) {
@@ -639,6 +688,7 @@ function formatName(n) {
 
 // ==================== HANG UP ====================
 async function hangUp() {
+  stopCallTimer();
   try {
     // ====================================================
     // NOVAN-LOCK: CLEAN TRACKS & PEER DISCONNECT — JANGAN UBAH
