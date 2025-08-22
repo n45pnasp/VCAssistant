@@ -82,16 +82,6 @@ function ensureModalHost() {
   return host;
 }
 
-/**
- * Modal bergaya dark sesuai tema (mirip modal nama).
- * @param {Object} opts
- * @param {string} opts.title
- * @param {string} opts.message (boleh HTML sederhana)
- * @param {string} [opts.okText="OK"]
- * @param {string|null} [opts.cancelText=null] -> kalau ada, jadi confirm dialog
- * @param {"default"|"danger"} [opts.variant="default"] -> warna tombol OK
- * @returns {Promise<boolean>} resolve true jika OK, false jika Cancel/close
- */
 function showAppModal({ title, message, okText = "OK", cancelText = null, variant = "default" } = {}) {
   ensureModalHost();
   return new Promise((resolve) => {
@@ -184,7 +174,6 @@ function showAppModal({ title, message, okText = "OK", cancelText = null, varian
     okBtn.addEventListener("click", () => cleanup(true));
     cancelBtn?.addEventListener("click", () => cleanup(false));
 
-    // Trap focus sederhana
     setTimeout(() => okBtn.focus(), 0);
     document.body.style.overflow = "hidden";
   });
@@ -293,7 +282,8 @@ async function initAfterAuth() {
   // Cleanup ketika tab ditutup/refresh
   window.addEventListener("beforeunload", async () => {
     try {
-      if (!isCaller) {
+      // === PERKETAT: caller.html tidak bertindak sebagai callee
+      if (!isCallerPage && !isCaller) {
         await deleteCalleeCandidates();
       }
     } catch {}
@@ -320,7 +310,7 @@ async function initAfterAuth() {
     }
 
     if (data?.offer && !data?.answer) {
-      // Ada offer → callee boleh join
+      // Ada offer → callee boleh join (caller tidak)
       if (!isCallerPage) {
         const name = await showNameInputModal();
         if (!name || name.trim() === "") {
@@ -333,9 +323,14 @@ async function initAfterAuth() {
           await alertModal("Gagal auto-join. Silakan coba lagi.", "Kesalahan");
         });
       }
-    } else {
+    } else if (!isCallerPage) {
+      // === HANYA CALLEE yang mendapat alert/redirect berikut
       await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
       location.href = PAGES.busy;
+    } else {
+      // === CALLER: tidak ada alert callee
+      const el = document.getElementById("currentRoom");
+      if (el) el.textContent = "Sedang melayani customer…";
     }
   }
 
@@ -511,6 +506,7 @@ async function startCall(calleeNameFromInit = null) {
         });
 
       } else {
+        // === Perilaku 'selesai' HANYA untuk callee
         await alertModal("Terima kasih. Silakan hubungi Customer Service bila dibutuhkan kembali.", "Selesai");
         location.href = PAGES.thanks;
       }
