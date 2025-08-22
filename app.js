@@ -223,34 +223,45 @@ async function initAfterAuth() {
   const roomSnap = await getDoc(roomDocRef);
 
   if (!roomSnap.exists()) {
+    // === Belum ada room
     if (isCallerPage && startBtn) {
+      // Admin boleh membuat room — tampilkan tombol Start
       startBtn.style.display = "inline-block";
       startBtn.disabled = false;
       startBtn.addEventListener("click", startCall);
     } else {
+      // Callee diarahkan
       await alertModal("Customer Service belum memulai panggilan. Silakan coba lagi nanti.", "Belum Tersedia");
       location.href = PAGES.thanks;
       return;
     }
   } else {
+    // === Sudah ada room
     const data = roomSnap.data();
-    if (isCallerPage && startBtn) { startBtn.style.display = "inline-block"; startBtn.disabled = true; }
 
-    if (data?.offer && !data?.answer) {
-      if (!isCallerPage) {
+    if (isCallerPage) {
+      // =========================
+      // ADMIN: TIDAK ADA ALERT / REDIRECT
+      // =========================
+      if (startBtn) {
+        startBtn.style.display = "inline-block";
+        // Jika sudah ada offer (sesi sedang aktif/siap), hindari double-offer
+        startBtn.disabled = !!data?.offer;
+        startBtn.addEventListener("click", startCall);
+      }
+      // lanjutkan: panel status + listener di attachCallerPanel()
+    } else {
+      // === Halaman callee
+      if (data?.offer && !data?.answer) {
+        // Ada offer menunggu answer → ajak join
         const name = await showNameInputModal();
         if (!name || name.trim() === "") { await alertModal("Nama wajib diisi untuk bergabung ke panggilan.", "Nama Diperlukan"); return; }
         sessionStorage.setItem("calleeName", name);
         startCall(name).catch(async err => { console.error("Gagal auto-join:", err); await alertModal("Gagal auto-join. Silakan coba lagi.", "Kesalahan"); });
-      }
-    } else {
-      if (!isCallerPage) {
+      } else {
+        // Sedang sibuk → masuk antrian (maaf.html akan menampilkan posisi)
         await offerQueueFlow();
         location.href = PAGES.thanks;
-        return;
-      } else {
-        await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
-        location.href = PAGES.busy;
         return;
       }
     }
