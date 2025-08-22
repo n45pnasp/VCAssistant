@@ -779,11 +779,10 @@ function monitorConnectionStatus() {
         wasCalleeConnected = true;
         fetchOrCreateCallStartTime().then(startCallTimer);
       } else if (snapshot.empty && wasCalleeConnected) {
-        showCalleeDisconnected();
         wasCalleeConnected = false;
         const label = document.getElementById("calleeNameLabel");
         if (label) label.style.display = "none";
-        stopCallTimer();
+        hangUp(false);
       }
     } else {
       if (!snapshot.empty) {
@@ -798,7 +797,7 @@ function formatName(n) {
 }
 
 // ==================== HANG UP ====================
-async function hangUp() {
+async function hangUp(reload = true) {
   stopCallTimer();
   try {
     // ====================================================
@@ -814,7 +813,8 @@ async function hangUp() {
 
     if (isCaller) {
       await deleteRoomIfCaller();
-      location.reload();
+      await updateDoc(doc(db, "queues", ROOM_ID), { allowed: deleteField() }).catch(() => {});
+      if (reload) location.reload();
     } else {
       const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
       await deleteCalleeCandidates();
@@ -822,7 +822,7 @@ async function hangUp() {
         location.href = PAGES.thanks;
         return;
       }
-      location.reload();
+      if (reload) location.reload();
     }
   } catch (e) {
     console.warn("hangUp error:", e);
@@ -899,26 +899,6 @@ function updateButtonStates() {
   if (hang) hang.disabled = !peerConnection;
 }
 
-function showCalleeDisconnected() {
-  const existing = document.querySelector("#calleeDisconnectedMsg");
-  if (existing) return;
-  const message = document.createElement("div");
-  message.id = "calleeDisconnectedMsg";
-  message.innerText = "Callee telah menutup sambungan.";
-  Object.assign(message.style, {
-    position: "absolute",
-    top: "10px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    background: "red",
-    color: "white",
-    padding: "10px 20px",
-    borderRadius: "5px",
-    zIndex: 9999,
-    fontSize: "16px"
-  });
-  document.body.appendChild(message);
-}
 
 // =====================================================
 // =============== SLIDE PANEL (MERGED) ================

@@ -41,14 +41,23 @@
 
     let startTime = null;
     let timerInterval = null;
+    let oneMinuteWarningShown = false;
+    const MAX_CALL_DURATION_SEC = 10 * 60;
     const timerEl = document.getElementById("busyTimer");
     const posEl = document.getElementById("queuePosition");
 
     onSnapshot(doc(db, "rooms", ROOM_ID), snap => {
       startTime = snap.data()?.callStartTime || null;
-      if (startTime && !timerInterval) {
-        timerInterval = setInterval(updateTimer, 1000);
+      if (startTime) {
+        if (!timerInterval) timerInterval = setInterval(updateTimer, 1000);
         updateTimer();
+      } else {
+        oneMinuteWarningShown = false;
+        if (timerInterval) {
+          clearInterval(timerInterval);
+          timerInterval = null;
+        }
+        timerEl.textContent = "00:00";
       }
     });
 
@@ -73,9 +82,21 @@
     function updateTimer() {
       if (!startTime) return;
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = MAX_CALL_DURATION_SEC - elapsed;
       const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
       const s = String(elapsed % 60).padStart(2, "0");
       timerEl.textContent = `${m}:${s}`;
+      if (remaining <= 60 && remaining > 0 && !oneMinuteWarningShown) {
+        oneMinuteWarningShown = true;
+        alert("Panggilan akan berakhir dalam 1 menit.");
+      }
+      if (remaining <= 0) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        startTime = null;
+        oneMinuteWarningShown = false;
+        timerEl.textContent = "00:00";
+      }
     }
   </script>
 </body>
