@@ -5,23 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Silakan Coba Kembali</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
-  
   <link rel="stylesheet" href="./main.css" />
 </head>
-<body class="simple" class="simple">
+<body class="simple">
   <div id="logo">
     <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
   </div>
+
   <h1>Maaf Customer Service sedang melayani pelanggan.. 🙏</h1>
   <p>Anda bisa menghubungi kembali nanti.</p>
+
   <!-- Relatif ke folder saat ini -->
   <button class="btn-primary" onclick="window.location.href='./'">Coba Lagi</button>
+
+  <!-- Kartu status antrian (dibaca app.js → attachMaafBindings) -->
   <div class="queue-card">
     <div class="q-title">Status Antrian</div>
     <div class="q-row"><span>Posisi Anda</span><strong id="antrianPos">-</strong></div>
     <div class="q-row"><span>Waktu Berjalan</span><strong id="antrianTimer">00:00</strong></div>
   </div>
+
   <div id="footerNote">Terima kasih telah menggunakan layanan kami</div>
+
+  <!-- Script utama: mengaktifkan logika antrian & timer -->
   <script type="module" src="./app.js"></script>
 </body>
 </html>
