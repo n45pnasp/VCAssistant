@@ -375,7 +375,7 @@ async function initAfterAuth() {
           await alertModal("Gagal auto-join. Silakan coba lagi.", "Kesalahan");
         });
       }
-    } else {
+    } else if (!IS_CALLER_PAGE) {
       await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
       location.href = PAGES.busy;
     }
