@@ -427,12 +427,50 @@ body.simple-page {
 .simple-page h1 { font-size: 24px; color: #222222; margin-bottom: 15px; }
 .simple-page p  { font-size: 18px; color: #555555; margin-bottom: 30px; }
 .simple-page #footerNote { margin-top: 40px; font-size: 13px; color: #888888; }
+.simple-page #footerNote .feedback-btn {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 6px 12px;
+  background: #0ea5e9;
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+}
 
 /* ---------- "Maaf" specific overrides ---------- */
 body.maaf-page { /* inherits simple-page */ }
 body.maaf-page #footerNote { color: #999; } /* match original maaf.html */
 .busy-info{ margin:20px auto; text-align:center; font-size:16px; }
 .busy-info div{ margin-top:8px; }
+
+/* ---------- Survei page ---------- */
+body.survei-page {
+  font-family: 'Roboto', sans-serif;
+  background: #f5f5f5; color: #333333;
+  padding: 40px 20px; text-align: center;
+}
+
+.survei-form {
+  max-width: 400px; margin: 0 auto; background: #ffffff;
+  padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.survei-form label {
+  display: block; text-align: left; margin: 15px 0 5px; font-size:14px;
+}
+.survei-form input[type="text"],
+.survei-form textarea,
+.survei-form select {
+  width: 100%; padding: 8px; border:1px solid #ccc; border-radius:4px;
+  font-size:14px;
+}
+.survei-form button {
+  margin-top:20px; padding:10px 20px; background:#0ea5e9; color:#fff;
+  border:none; border-radius:6px; cursor:pointer; font-weight:500;
+}
+.survei-message {
+  margin-top:20px; font-size:14px; color:#28a745; display:none;
+}
 
 /* ---------- Close page (close.html) ---------- */
 body.close-page {
