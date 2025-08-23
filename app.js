@@ -67,6 +67,9 @@ let peerConnection = null;
 let roomRef = null;
 let isCaller = false;
 let wasCalleeConnected = false;
+let callTimerInterval = null;
+let callStartTime = null;
+const queueImages = ["icons/a.jpg", "icons/garuda.png"];
 const ROOM_ID = (window.ROOM_ID || "cs-room"); // bisa di-overwrite dari HTML bila perlu
 
 // =====================================================
@@ -267,6 +270,48 @@ function inputModal({ title = "Input", placeholder = "Ketik di sini...", okText 
   });
 }
 
+function startCallTimer() {
+  callStartTime = Date.now();
+  const el = document.getElementById("callTimer");
+  if (!el) return;
+  el.style.display = "block";
+  callTimerInterval = setInterval(() => {
+    const diff = Math.floor((Date.now() - callStartTime) / 1000);
+    const m = String(Math.floor(diff / 60)).padStart(2, "0");
+    const s = String(diff % 60).padStart(2, "0");
+    el.textContent = `${m}:${s}`;
+  }, 1000);
+}
+
+function stopCallTimer() {
+  if (callTimerInterval) {
+    clearInterval(callTimerInterval);
+    callTimerInterval = null;
+  }
+  const el = document.getElementById("callTimer");
+  if (el) el.style.display = "none";
+}
+
+function showQueueModal(pos = 1, total = 1) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("queueModal");
+    const timeEl = document.getElementById("queueTime");
+    const posEl = document.getElementById("queuePosition");
+    const totalEl = document.getElementById("queueTotal");
+    const imgEl = document.getElementById("queueImage");
+    const okBtn = document.getElementById("queueOkBtn");
+    if (!modal) { resolve(); return; }
+    timeEl.textContent = new Date().toLocaleTimeString("id-ID", { hour12: false });
+    posEl.textContent = pos;
+    totalEl.textContent = total;
+    const rand = queueImages[Math.floor(Math.random() * queueImages.length)];
+    imgEl.src = rand;
+    modal.style.display = "flex";
+    const close = () => { modal.style.display = "none"; okBtn?.removeEventListener("click", close); resolve(); };
+    okBtn?.addEventListener("click", close);
+  });
+}
+
 // ==================== INIT ====================
 window.onload = async () => {
   try {
@@ -322,6 +367,7 @@ async function initAfterAuth() {
     if (data?.offer && !data?.answer) {
       // Ada offer → callee boleh join
       if (!isCallerPage) {
+        await showQueueModal(1, 1);
         const name = await showNameInputModal();
         if (!name || name.trim() === "") {
           await alertModal("Nama wajib diisi untuk bergabung ke panggilan.", "Nama Diperlukan");
@@ -389,7 +435,10 @@ async function startCall(calleeNameFromInit = null) {
     // ============================================================
     peerConnection = new RTCPeerConnection(servers);
     localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
-    peerConnection.ontrack = e => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+    peerConnection.ontrack = e => {
+      e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+      if (isCaller && !callStartTime) startCallTimer();
+    };
 
     roomRef = doc(db, "rooms", ROOM_ID);
     const roomSnap = await getDoc(roomRef);
@@ -640,6 +689,7 @@ function formatName(n) {
 // ==================== HANG UP ====================
 async function hangUp() {
   try {
+    stopCallTimer();
     // ====================================================
     // NOVAN-LOCK: CLEAN TRACKS & PEER DISCONNECT — JANGAN UBAH
     // ====================================================
