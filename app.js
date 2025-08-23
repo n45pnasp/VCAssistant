@@ -74,6 +74,7 @@ let callTimerInterval = null;
 let oneMinuteWarningShown = false;
 const MAX_CALL_DURATION_SEC = 10 * 60;
 const ROOM_ID = (window.ROOM_ID || "cs-room"); // bisa di-overwrite dari HTML bila perlu
+const IS_CALLER_PAGE = location.pathname.includes("caller.html");
 
 // =====================================================
 // ================== MODAL UTIL (CUSTOM) ==============
@@ -284,19 +285,20 @@ window.onload = async () => {
     setTimeout(()=>{ openPanel(); }, 600);
   } catch (e) {
     console.error("❌ Gagal login anonim:", e);
-    await alertModal("Tidak bisa login ke server. Silakan refresh atau coba browser lain.", "Gagal Login", "danger");
+    if (!IS_CALLER_PAGE) {
+      await alertModal("Tidak bisa login ke server. Silakan refresh atau coba browser lain.", "Gagal Login", "danger");
+    }
   }
 };
 
 async function initAfterAuth() {
-  const isCallerPage = location.pathname.includes("caller.html");
   const startBtn = document.querySelector("#startCallBtn");
   const hangupBtn = document.querySelector("#hangupBtn");
 
-  if (!isCallerPage && startBtn) startBtn.remove();
+  if (!IS_CALLER_PAGE && startBtn) startBtn.remove();
   if (hangupBtn) hangupBtn.addEventListener("click", hangUp);
 
-  if (isCallerPage) {
+  if (IS_CALLER_PAGE) {
     listenQueueForCaller();
   }
 
@@ -313,7 +315,7 @@ async function initAfterAuth() {
 
   if (!roomSnap.exists()) {
     // Room belum dibuat oleh CS
-    if (isCallerPage && startBtn) {
+    if (IS_CALLER_PAGE && startBtn) {
       startBtn.style.display = "inline-block";
       startBtn.disabled = false;
       startBtn.addEventListener("click", () => startCall());
@@ -324,14 +326,14 @@ async function initAfterAuth() {
   } else {
     const data = roomSnap.data();
 
-    if (isCallerPage && startBtn) {
+    if (IS_CALLER_PAGE && startBtn) {
       startBtn.style.display = "inline-block";
       startBtn.disabled = true; // room sudah ada, menunggu callee
     }
 
     if (data?.offer && data?.answer) {
       // Sedang melayani pelanggan lain
-      if (!isCallerPage) {
+      if (!IS_CALLER_PAGE) {
         const name = await showNameInputModal();
         if (!name) { location.href = PAGES.thanks; return; }
         sessionStorage.setItem("queueName", name);
@@ -350,7 +352,7 @@ async function initAfterAuth() {
       }
     } else if (data?.offer && !data?.answer) {
       // Ada offer → callee boleh join bila diizinkan
-      if (!isCallerPage) {
+      if (!IS_CALLER_PAGE) {
         let name = new URLSearchParams(location.search).get("name") || sessionStorage.getItem("queueName");
         if (!name) name = await showNameInputModal();
         if (!name || name.trim() === "") {
@@ -391,7 +393,10 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
     try {
       const camPerm = await navigator.permissions.query({ name: "camera" });
       if (camPerm.state === "denied") {
-        await alertModal("Izin kamera ditolak. Aktifkan kamera di pengaturan browser.", "Kamera Ditolak", "danger");
+        if (!IS_CALLER_PAGE) {
+          await alertModal("Izin kamera ditolak. Aktifkan kamera di pengaturan browser.", "Kamera Ditolak", "danger");
+        }
+        console.warn("Kamera ditolak");
         return;
       }
     } catch { /* Permissions API tidak selalu ada */ }
@@ -560,7 +565,9 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
 
   } catch (err) {
     console.error("❌ startCall error:", err);
-    await alertModal("Gagal connect: " + err.message, "Kesalahan", "danger");
+    if (!IS_CALLER_PAGE) {
+      await alertModal("Gagal connect: " + err.message, "Kesalahan", "danger");
+    }
   } finally {
     showLoading(false);
     const startBtn = document.querySelector("#startCallBtn");
@@ -662,7 +669,9 @@ function updateCallTimer() {
   if (timerEl) timerEl.textContent = `${minutes}:${seconds}`;
   if (remaining <= 60 && remaining > 0 && !oneMinuteWarningShown) {
     oneMinuteWarningShown = true;
-    alertModal("Panggilan akan berakhir dalam 1 menit.", "Peringatan");
+    if (!isCaller) {
+      alertModal("Panggilan akan berakhir dalam 1 menit.", "Peringatan");
+    }
   }
   if (remaining <= 0) {
     hangUp();
@@ -719,7 +728,7 @@ async function allowCallee(name) {
     const list = snap.data()?.list || [];
     const target = name || list[0];
     if (!target) {
-      await alertModal("Tidak ada antrian.");
+      console.warn("Tidak ada antrian.");
       return;
     }
     await startCall(null, true);
