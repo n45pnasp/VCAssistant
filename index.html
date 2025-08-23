@@ -71,6 +71,18 @@
     </div>
   </div>
 
+  <!-- Minta izin kamera & mikrofon lebih awal -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      } catch (err) {
+        console.warn('Izin kamera/mikrofon mungkin ditolak:', err);
+      }
+    });
+  </script>
+
   <!-- Script utama -->
   <script type="module" src="./app.js"></script>
 </body>

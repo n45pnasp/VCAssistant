@@ -396,14 +396,21 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
   try {
     showLoading(true);
 
-    // Cek izin kamera (opsional)
+    // Cek izin kamera & mikrofon (opsional)
     try {
-      const camPerm = await navigator.permissions.query({ name: "camera" });
-      if (camPerm.state === "denied") {
+      const [camPerm, micPerm] = await Promise.all([
+        navigator.permissions.query({ name: "camera" }),
+        navigator.permissions.query({ name: "microphone" })
+      ]);
+      if (camPerm.state === "denied" || micPerm.state === "denied") {
         if (!IS_CALLER_PAGE) {
-          await alertModal("Izin kamera ditolak. Aktifkan kamera di pengaturan browser.", "Kamera Ditolak", "danger");
+          await alertModal(
+            "Izin kamera/mikrofon ditolak. Aktifkan kamera dan mikrofon di pengaturan browser.",
+            "Izin Ditolak",
+            "danger"
+          );
         }
-        console.warn("Kamera ditolak");
+        console.warn("Kamera atau mikrofon ditolak");
         return;
       }
     } catch { /* Permissions API tidak selalu ada */ }
