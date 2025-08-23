@@ -896,7 +896,6 @@ async function hangUp(reload = true) {
 
     if (isCaller) {
       await deleteRoomIfCaller();
-      await updateDoc(doc(db, "queues", ROOM_ID), { allowed: deleteField() }).catch(() => {});
       if (reload) location.reload();
     } else {
       const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
@@ -948,6 +947,14 @@ async function deleteRoomIfCaller() {
     // NOVAN-LOCK: HAPUS ROOM DOC — JANGAN UBAH
     // ====================================================
     await deleteDoc(roomRef);
+
+    try {
+      const queueRef = doc(db, "queues", ROOM_ID);
+      await setDoc(queueRef, { list: [] });
+      console.log("🧹 Queue direset");
+    } catch (e) {
+      console.warn("⚠️ Gagal reset queue:", e.message);
+    }
 
     console.log("🔥 Room & subkoleksi berhasil dihapus");
   } catch (err) {
