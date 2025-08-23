@@ -601,6 +601,8 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
 
 // ==================== MODAL NAMA CALLEE ====================
 function showNameInputModal() {
+  const loadingEl = document.getElementById("loading");
+  if (loadingEl) loadingEl.style.display = "none";
   return new Promise((resolve) => {
     const modal = document.getElementById("nameModal");
     const input = document.getElementById("calleeNameInput");
@@ -806,6 +808,20 @@ function showWaitingModal(myName) {
       }
     }
   });
+
+  const exitBtn = document.getElementById("exitQueueBtn");
+  if (exitBtn) {
+    exitBtn.addEventListener("click", async () => {
+      roomUnsub();
+      queueUnsub();
+      if (timerInterval) clearInterval(timerInterval);
+      if (iconTimeout) { clearTimeout(iconTimeout); iconTimeout = null; }
+      modal.style.display = "none";
+      await updateDoc(doc(db, "queues", ROOM_ID), {
+        list: arrayRemove(myName)
+      });
+    });
+  }
 
   function updateTimer() {
     if (!startTime) return;
