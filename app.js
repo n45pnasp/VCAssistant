@@ -418,13 +418,24 @@ function showWaitingModal(myName) {
 }
 
 function listenQueueForCaller() {
-  const allowBtn = document.getElementById("allowBtn");
-  if (!allowBtn) return;
+  const listEl = document.getElementById("queueList");
+  if (!listEl) return;
   const qRef = doc(db, "queues", ROOM_ID);
   onSnapshot(qRef, (snap) => {
     const data = snap.data() || {};
     const list = data.list || [];
-    allowBtn.disabled = list.length === 0;
+    if (list.length) {
+      listEl.innerHTML = list
+        .map((n, i) =>
+          `<li>${i + 1}. ${formatName(n)} <button class="btn-primary allow-btn" data-name="${n}">Persilahkan</button></li>`
+        )
+        .join("");
+      listEl.querySelectorAll(".allow-btn").forEach(btn => {
+        btn.addEventListener("click", () => allowCallee(btn.dataset.name));
+      });
+    } else {
+      listEl.innerHTML = "<li>(Kosong)</li>";
+    }
   });
 }
 
@@ -472,8 +483,6 @@ async function initAfterAuth() {
 
   if (IS_CALLER_PAGE) {
     listenQueueForCaller();
-    const allowBtn = document.getElementById("allowBtn");
-    allowBtn?.addEventListener("click", () => allowCallee());
   }
 
   // Cleanup ketika tab ditutup/refresh
