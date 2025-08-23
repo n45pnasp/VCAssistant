@@ -320,6 +320,7 @@ async function initAfterAuth() {
       startBtn.disabled = false;
       startBtn.addEventListener("click", () => startCall());
     } else {
+      await alertModal("Customer belum melayani", "Info");
       location.href = PAGES.busy;
       return;
     }
@@ -377,8 +378,9 @@ async function initAfterAuth() {
         });
       }
     } else if (!IS_CALLER_PAGE) {
-      await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
+      await alertModal("Customer belum melayani", "Info");
       location.href = PAGES.busy;
+      return;
     }
   }
 
