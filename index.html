@@ -31,6 +31,7 @@
 
   <!-- Status -->
   <div><span id="currentRoom"></span></div>
+  <div id="callTimer" style="display:none;">00:00</div>
 
   <!-- Video -->
   <div id="videos">
@@ -55,6 +56,15 @@
         <button class="modal-button" id="cancelBtn">Batal</button>
         <button class="modal-button" id="joinBtn">Sambungkan</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal menunggu antrian -->
+  <div id="waitingModal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <h2>Mohon Tunggu</h2>
+      <p>Waktu panggilan yang berlangsung: <span id="waitTimer">00:00</span></p>
+      <p>Antrian Anda: <span id="waitPosition">-</span></p>
     </div>
   </div>
 

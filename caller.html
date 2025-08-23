@@ -28,6 +28,7 @@
   </div>
 
   <div><span id="currentRoom"></span></div>
+  <div id="callTimer" style="display:none;">00:00</div>
 
   <div id="videos">
     <video id="localVideo" muted autoplay playsinline></video>
@@ -61,6 +62,11 @@
 
       <div class="spinner" id="spinnerDots" aria-hidden="true">
         <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+
+      <div class="queue-section">
+        <h3>Daftar Antrian</h3>
+        <ul id="queueList"><li>(Kosong)</li></ul>
       </div>
 
       <div class="panel-actions">
