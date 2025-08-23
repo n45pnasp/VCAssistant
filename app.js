@@ -312,24 +312,29 @@ async function initAfterAuth() {
   });
 
   const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
+  const data = roomSnap.data() || {};
 
-  if (!roomSnap.exists()) {
-    // Room belum dibuat oleh CS
-    if (IS_CALLER_PAGE && startBtn) {
-      startBtn.style.display = "inline-block";
+  // ===== Setup tombol call untuk caller =====
+  if (IS_CALLER_PAGE && startBtn) {
+    startBtn.style.display = "inline-block";
+    // Hanya nonaktif jika sudah ada offer aktif (panggilan sedang berjalan)
+    if (!data.offer) {
       startBtn.disabled = false;
       startBtn.addEventListener("click", () => startCall());
     } else {
+      startBtn.disabled = true;
+    }
+  }
+
+  if (!roomSnap.exists()) {
+    // Room belum dibuat oleh CS dan ini bukan halaman caller
+    if (!IS_CALLER_PAGE) {
+      await alertModal("Customer belum melayani", "Info");
       location.href = PAGES.busy;
       return;
     }
   } else {
-    const data = roomSnap.data();
-
-    if (IS_CALLER_PAGE && startBtn) {
-      startBtn.style.display = "inline-block";
-      startBtn.disabled = true; // room sudah ada, menunggu callee
-    }
+    // Room sudah ada
 
     if (data?.offer && data?.answer) {
       // Sedang melayani pelanggan lain
@@ -377,8 +382,9 @@ async function initAfterAuth() {
         });
       }
     } else if (!IS_CALLER_PAGE) {
-      await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
+      await alertModal("Customer belum melayani", "Info");
       location.href = PAGES.busy;
+      return;
     }
   }
 
@@ -390,14 +396,21 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
   try {
     showLoading(true);
 
-    // Cek izin kamera (opsional)
+    // Cek izin kamera & mikrofon (opsional)
     try {
-      const camPerm = await navigator.permissions.query({ name: "camera" });
-      if (camPerm.state === "denied") {
+      const [camPerm, micPerm] = await Promise.all([
+        navigator.permissions.query({ name: "camera" }),
+        navigator.permissions.query({ name: "microphone" })
+      ]);
+      if (camPerm.state === "denied" || micPerm.state === "denied") {
         if (!IS_CALLER_PAGE) {
-          await alertModal("Izin kamera ditolak. Aktifkan kamera di pengaturan browser.", "Kamera Ditolak", "danger");
+          await alertModal(
+            "Izin kamera/mikrofon ditolak. Aktifkan kamera dan mikrofon di pengaturan browser.",
+            "Izin Ditolak",
+            "danger"
+          );
         }
-        console.warn("Kamera ditolak");
+        console.warn("Kamera atau mikrofon ditolak");
         return;
       }
     } catch { /* Permissions API tidak selalu ada */ }
@@ -436,6 +449,14 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
     peerConnection = new RTCPeerConnection(servers);
     localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
     peerConnection.ontrack = e => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+    peerConnection.onconnectionstatechange = () => {
+      const state = peerConnection.connectionState;
+      if (state === "connected") {
+        fetchOrCreateCallStartTime().then(startCallTimer);
+      } else if (["disconnected", "failed", "closed"].includes(state)) {
+        stopCallTimer();
+      }
+    };
 
     roomRef = doc(db, "rooms", ROOM_ID);
     const roomSnap = await getDoc(roomRef);
@@ -572,7 +593,8 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
   } finally {
     showLoading(false);
     const startBtn = document.querySelector("#startCallBtn");
-    if (startBtn) startBtn.disabled = true;
+    // Nonaktifkan tombol hanya jika koneksi berhasil dibuat
+    if (startBtn) startBtn.disabled = !!peerConnection;
     updateButtonStates();
   }
 }
@@ -707,9 +729,38 @@ function showWaitingModal(myName) {
 
   const timerEl = document.getElementById("waitTimer");
   const posEl = document.getElementById("waitPosition");
+  const totalEl = document.getElementById("waitTotal");
+  const iconEl = document.getElementById("waitIcon");
   let startTime = null;
   let timerInterval = null;
   let oneMinuteWarningShown = false;
+  let iconTimeout = null;
+  let icons = [];
+  let iconIdx = 0;
+
+  function rotateIcon() {
+    if (!icons.length || !iconEl) return;
+    const { file, duration } = icons[iconIdx];
+    iconEl.src = `./icons/${file}`;
+    iconIdx = (iconIdx + 1) % icons.length;
+    iconTimeout = setTimeout(rotateIcon, duration);
+  }
+
+  if (iconEl) {
+    fetch("./icons/icons.json")
+      .then(r => r.json())
+      .then(files => {
+        icons = files.map(file => {
+          const m = file.match(/(.+?)_(\d+)s\.(png|jpe?g|svg|gif)$/);
+          return {
+            file,
+            duration: m ? parseInt(m[2], 10) * 1000 : 3000
+          };
+        });
+        if (icons.length) rotateIcon();
+      })
+      .catch(err => console.warn("Gagal memuat ikon:", err));
+  }
 
   const roomUnsub = onSnapshot(doc(db, "rooms", ROOM_ID), snap => {
     startTime = snap.data()?.callStartTime || null;
@@ -731,6 +782,7 @@ function showWaitingModal(myName) {
     const list = data.list || [];
     const idx = list.findIndex(n => n === myName);
     posEl.textContent = idx >= 0 ? idx + 1 : "-";
+    if (totalEl) totalEl.textContent = list.length;
     if (data.allowed === myName) {
       const ok = await showAppModal({
         title: "Konfirmasi",
@@ -742,6 +794,7 @@ function showWaitingModal(myName) {
         roomUnsub();
         queueUnsub();
         if (timerInterval) clearInterval(timerInterval);
+        if (iconTimeout) { clearTimeout(iconTimeout); iconTimeout = null; }
         modal.style.display = "none";
         sessionStorage.setItem("calleeName", myName);
         startCall(myName);
@@ -831,12 +884,8 @@ function monitorConnectionStatus() {
     } else {
       if (!snapshot.empty) {
         if (el) el.textContent = "Terkoneksi";
-        if (!wasCallerConnected) {
-          fetchOrCreateCallStartTime().then(startCallTimer);
-          wasCallerConnected = true;
-        }
+        wasCallerConnected = true;
       } else if (snapshot.empty && wasCallerConnected) {
-        stopCallTimer();
         wasCallerConnected = false;
       }
     }
@@ -862,11 +911,10 @@ function monitorConnectionStatus() {
         });
 
         wasCalleeConnected = true;
-        fetchOrCreateCallStartTime().then(startCallTimer);
       } else if (snapshot.empty && wasCalleeConnected) {
-        wasCalleeConnected = false;
         const label = document.getElementById("calleeNameLabel");
         if (label) label.style.display = "none";
+        wasCalleeConnected = false;
         hangUp(false);
       }
     } else {

@@ -61,12 +61,27 @@
 
   <!-- Modal menunggu antrian -->
   <div id="waitingModal" class="modal" style="display:none;">
-    <div class="modal-content">
+    <div class="modal-content waiting">
       <h2>Mohon Tunggu</h2>
-      <p>Waktu panggilan yang berlangsung: <span id="waitTimer">00:00</span></p>
-      <p>Antrian Anda: <span id="waitPosition">-</span></p>
+      <div class="waiting-details">
+        <div id="queueInfo" class="queue-label">Anda antrian ke <span id="waitPosition">-</span> dari <span id="waitTotal">0</span></div>
+        <div class="time-label">Waktu panggilan yang berlangsung: <span id="waitTimer">00:00</span></div>
+      </div>
+      <img id="waitIcon" class="queue-icon" alt="Ikon antrian" />
     </div>
   </div>
+
+  <!-- Minta izin kamera & mikrofon lebih awal -->
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        stream.getTracks().forEach(t => t.stop());
+      } catch (err) {
+        console.warn('Izin kamera/mikrofon mungkin ditolak:', err);
+      }
+    });
+  </script>
 
   <!-- Script utama -->
   <script type="module" src="./app.js"></script>

@@ -59,6 +59,10 @@
     <div class="slide-body">
       <div class="row status" id="statusText">Memeriksa status koneksi…</div>
       <div class="row last-checked" id="lastCheckedText">Terakhir diperiksa: -</div>
+      <div class="panel-actions">
+        <button id="closeRoomBtn" class="btn-danger">Tutup Koneksi</button>
+      </div>
+      <div class="note">Room & kandidat ICE akan dihapus dari Firestore.</div>
 
       <div class="spinner" id="spinnerDots" aria-hidden="true">
         <div class="dot"></div><div class="dot"></div><div class="dot"></div>
@@ -68,11 +72,6 @@
         <h3>Daftar Antrian</h3>
         <ul id="queueList"><li>(Kosong)</li></ul>
       </div>
-
-      <div class="panel-actions">
-        <button id="closeRoomBtn" class="btn-danger">Tutup Koneksi</button>
-      </div>
-      <div class="note">Room & kandidat ICE akan dihapus dari Firestore.</div>
     </div>
   </aside>
 

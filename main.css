@@ -179,6 +179,40 @@ body {
   margin-bottom: 6px;
 }
 
+/* Antrian callee */
+#waitingModal .modal-content {
+  width: 100vw;
+  max-width: none;
+  padding: 24px 0 0;
+  text-align: center;
+}
+
+#waitingModal .modal-content > h2 {
+  padding: 0 20px;
+}
+
+#waitingModal .waiting-details {
+  padding: 0 20px;
+  margin-top: 10px;
+}
+
+#waitingModal .queue-label {
+  font-size: 15px;
+  margin-bottom: 6px;
+}
+
+#waitingModal .time-label {
+  font-size: 13px;
+  color: #c7c7cc;
+}
+
+.queue-icon {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin-top: 16px;
+}
+
 /* Description */
 .modal-content p {
   font-size: 13px;
