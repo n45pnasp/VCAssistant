@@ -610,12 +610,10 @@ function showNameInputModal() {
     }
 
     if (iconContainer && iconContainer.childElementCount === 0) {
-      fetch("./icons/")
-        .then(r => r.text())
-        .then(html => {
-          const matches = [...html.matchAll(/href="([^"]+\.(?:png|jpe?g|svg|gif))"/g)];
-          matches.forEach(m => {
-            const file = m[1];
+      fetch("./icons/icons.json")
+        .then(r => r.json())
+        .then(files => {
+          files.forEach(file => {
             const img = document.createElement("img");
             img.src = `./icons/${file}`;
             img.alt = file.split(".")[0];
@@ -757,17 +755,16 @@ function showWaitingModal(myName) {
   }
 
   if (iconEl) {
-    fetch("./icons/")
-      .then(r => r.text())
-      .then(html => {
-        icons = [...html.matchAll(/href="([^"]+\.(?:png|jpe?g|svg|gif))"/g)].map(m => m[1])
-          .map(file => {
-            const m = file.match(/(.+?)_(\d+)s\.(png|jpe?g|svg|gif)$/);
-            return {
-              file,
-              duration: m ? parseInt(m[2], 10) * 1000 : 3000
-            };
-          });
+    fetch("./icons/icons.json")
+      .then(r => r.json())
+      .then(files => {
+        icons = files.map(file => {
+          const m = file.match(/(.+?)_(\d+)s\.(png|jpe?g|svg|gif)$/);
+          return {
+            file,
+            duration: m ? parseInt(m[2], 10) * 1000 : 3000
+          };
+        });
         if (icons.length) rotateIcon();
       })
       .catch(err => console.warn("Gagal memuat ikon:", err));
