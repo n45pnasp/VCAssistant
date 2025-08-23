@@ -8,15 +8,16 @@
   <link rel="stylesheet" href="./main.css">
 </head>
 <body class="survei-page">
-  <div id="logo">
-    <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
-  </div>
-  <h1>Survei Layanan AirTalk</h1>
-  <p>Kami ingin mendengar pendapat Anda tentang layanan kami.</p>
+  <div class="survei-container">
+    <div id="logo">
+      <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
+    </div>
+    <h1>Survei Layanan AirTalk</h1>
+    <p>Kami ingin mendengar pendapat Anda tentang layanan kami.</p>
 
-  <form id="survey-form" class="survei-form">
-    <label for="nama">Nama (opsional)</label>
-    <input type="text" id="nama" name="nama" placeholder="Nama Anda" />
+    <form id="survey-form" class="survei-form">
+      <label for="nama">Nama (opsional)</label>
+      <input type="text" id="nama" name="nama" placeholder="Nama Anda" />
 
     <label for="rating">Penilaian Layanan</label>
     <select id="rating" name="rating" required>
@@ -31,9 +32,10 @@
     <label for="pesan">Saran / Masukan</label>
     <textarea id="pesan" name="pesan" rows="4" placeholder="Tulis masukan Anda" required></textarea>
 
-    <button type="submit">Kirim</button>
-    <div id="msg" class="survei-message">Terima kasih atas feedback Anda!</div>
-  </form>
+      <button type="submit">Kirim</button>
+      <div id="msg" class="survei-message">Terima kasih atas feedback Anda!</div>
+    </form>
+  </div>
 
   <script>
   const SPREADSHEET_ID = 'https://script.google.com/macros/s/AKfycbz3uAdo3IdPP2xvbHC6xei9TWwDbTsWf9g4rnVdboTw2Pfjpa7_GiVURTAKg-YLMRxb/exec'; // ganti dengan ID Spreadsheet Google
