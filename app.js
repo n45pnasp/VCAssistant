@@ -585,12 +585,29 @@ function showNameInputModal() {
     const joinBtn = document.getElementById("joinBtn");
     const cancelBtn = document.getElementById("cancelBtn");
     let inlineErr = document.getElementById("nameInlineError");
+    const iconContainer = document.getElementById("calleeIcons");
 
     // Jika tidak ada modal di HTML, pakai fallback modal input custom
     if (!modal) {
       inputModal({ title: "Masukkan nama Anda", placeholder: "Nama Anda", okText: "Gabung", cancelText: "Batal" })
         .then(v => resolve(v || ""));
       return;
+    }
+
+    if (iconContainer && iconContainer.childElementCount === 0) {
+      fetch("./icons/")
+        .then(r => r.text())
+        .then(html => {
+          const matches = [...html.matchAll(/href="([^"]+\.(?:png|jpe?g|svg|gif))"/g)];
+          matches.forEach(m => {
+            const file = m[1];
+            const img = document.createElement("img");
+            img.src = `./icons/${file}`;
+            img.alt = file.split(".")[0];
+            iconContainer.appendChild(img);
+          });
+        })
+        .catch(err => console.warn("Gagal memuat ikon:", err));
     }
 
     modal.style.display = "flex";

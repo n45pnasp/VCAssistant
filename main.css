@@ -179,6 +179,21 @@ body {
   margin-bottom: 6px;
 }
 
+/* Dynamic icons in name modal */
+.icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.icon-grid img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
 /* Description */
 .modal-content p {
   font-size: 13px;
