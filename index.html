@@ -31,6 +31,7 @@
 
   <!-- Status -->
   <div><span id="currentRoom"></span></div>
+  <div id="callTimer" style="display:none;">00:00</div>
 
   <!-- Video -->
   <div id="videos">
@@ -62,10 +63,11 @@
   <div id="waitingModal" class="modal" style="display:none;">
     <div class="modal-content">
       <h2>Mohon Tunggu</h2>
-      <p>Waktu panggilan yang berlangsung: <span id="waitTimer">00:00</span></p>
+      <p>Waktu panggilan yang berlangsung:</p>
       <p>Antrian Anda: <span id="waitPosition">-</span> dari <span id="waitTotal">-</span></p>
       <img id="waitImage" src="" alt="Queue image" />
     </div>
+    <div id="waitTimer">00:00</div>
   </div>
 
   <!-- Script utama -->

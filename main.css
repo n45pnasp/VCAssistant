@@ -118,14 +118,25 @@ body {
 
 #callTimer {
   position: fixed;
-  top: 60px;
+  bottom: 20px;
   left: 20px;
   background: rgba(0, 0, 0, 0.5);
   color: #fff;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 20px;
   font-size: 14px;
   z-index: 100;
+}
+
+#waitTimer {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
 }
 
 /* ===== NAME CALLEE STATUS ===== */
@@ -435,6 +446,11 @@ body.close-page {
   padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
 }
 .btn-danger:disabled{ opacity:.7; cursor:not-allowed; }
+.btn-primary{
+  background: #0ea5e9; color:#fff; border:none;
+  padding:10px 14px; border-radius:10px; font-weight:600; cursor:pointer;
+}
+.btn-primary:disabled{ opacity:.7; cursor:not-allowed; }
 .note{ font-size:12px; color: var(--panel-muted); margin-top:10px; }
 
 /* Handle/Tab untuk buka-tutup */
