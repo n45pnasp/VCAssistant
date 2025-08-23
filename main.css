@@ -194,6 +194,15 @@ body {
 #waitingModal .waiting-details {
   padding: 0 20px;
   margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#waitingModal .waiting-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 #waitingModal .queue-label {
@@ -204,6 +213,20 @@ body {
 #waitingModal .time-label {
   font-size: 13px;
   color: #c7c7cc;
+}
+
+#waitingModal .exit-queue-btn {
+  font-size: 13px;
+  padding: 6px 12px;
+  background-color: #ff3b30;
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+}
+
+#waitingModal .exit-queue-btn:hover {
+  background-color: #d70015;
 }
 
 .queue-icon {

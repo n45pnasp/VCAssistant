@@ -807,6 +807,20 @@ function showWaitingModal(myName) {
     }
   });
 
+  const exitBtn = document.getElementById("exitQueueBtn");
+  if (exitBtn) {
+    exitBtn.addEventListener("click", async () => {
+      roomUnsub();
+      queueUnsub();
+      if (timerInterval) clearInterval(timerInterval);
+      if (iconTimeout) { clearTimeout(iconTimeout); iconTimeout = null; }
+      modal.style.display = "none";
+      await updateDoc(doc(db, "queues", ROOM_ID), {
+        list: arrayRemove(myName)
+      });
+    });
+  }
+
   function updateTimer() {
     if (!startTime) return;
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
