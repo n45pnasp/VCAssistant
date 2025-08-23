@@ -200,7 +200,7 @@ body {
   box-sizing: border-box;
 }
 
-#queueImage {
+#waitImage {
   width: 80%;
   max-width: 200px;
   height: auto;

@@ -58,15 +58,13 @@
     </div>
   </div>
 
-  <!-- Modal antrian dengan gambar acak -->
-  <div id="queueModal" class="modal" style="display:none;">
+  <!-- Modal menunggu antrian dengan gambar acak -->
+  <div id="waitingModal" class="modal" style="display:none;">
     <div class="modal-content">
-      <h2 id="queueTime">00:00:00</h2>
-      <p>Anda antrian <span id="queuePosition">1</span> dari <span id="queueTotal">1</span></p>
-      <img id="queueImage" src="" alt="Queue image" />
-      <div class="modal-buttons">
-        <button class="modal-button" id="queueOkBtn">OK</button>
-      </div>
+      <h2>Mohon Tunggu</h2>
+      <p>Waktu panggilan yang berlangsung: <span id="waitTimer">00:00</span></p>
+      <p>Antrian Anda: <span id="waitPosition">-</span> dari <span id="waitTotal">-</span></p>
+      <img id="waitImage" src="" alt="Queue image" />
     </div>
   </div>
 
