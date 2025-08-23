@@ -194,6 +194,13 @@ body {
   object-fit: contain;
 }
 
+.queue-icon {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  margin-top: 10px;
+}
+
 /* Description */
 .modal-content p {
   font-size: 13px;

@@ -436,6 +436,14 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
     peerConnection = new RTCPeerConnection(servers);
     localStream.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
     peerConnection.ontrack = e => e.streams[0].getTracks().forEach(t => remoteStream.addTrack(t));
+    peerConnection.onconnectionstatechange = () => {
+      const state = peerConnection.connectionState;
+      if (state === "connected") {
+        fetchOrCreateCallStartTime().then(startCallTimer);
+      } else if (["disconnected", "failed", "closed"].includes(state)) {
+        stopCallTimer();
+      }
+    };
 
     roomRef = doc(db, "rooms", ROOM_ID);
     const roomSnap = await getDoc(roomRef);
@@ -724,9 +732,30 @@ function showWaitingModal(myName) {
 
   const timerEl = document.getElementById("waitTimer");
   const posEl = document.getElementById("waitPosition");
+  const totalEl = document.getElementById("waitTotal");
+  const iconEl = document.getElementById("waitIcon");
   let startTime = null;
   let timerInterval = null;
   let oneMinuteWarningShown = false;
+  let iconInterval = null;
+  let icons = [];
+  let iconIdx = 0;
+
+  if (iconEl) {
+    fetch("./icons/")
+      .then(r => r.text())
+      .then(html => {
+        icons = [...html.matchAll(/href="([^"]+\.(?:png|jpe?g|svg|gif))"/g)].map(m => m[1]);
+        if (icons.length) {
+          iconEl.src = `./icons/${icons[0]}`;
+          iconInterval = setInterval(() => {
+            iconIdx = (iconIdx + 1) % icons.length;
+            iconEl.src = `./icons/${icons[iconIdx]}`;
+          }, 3000);
+        }
+      })
+      .catch(err => console.warn("Gagal memuat ikon:", err));
+  }
 
   const roomUnsub = onSnapshot(doc(db, "rooms", ROOM_ID), snap => {
     startTime = snap.data()?.callStartTime || null;
@@ -748,6 +777,7 @@ function showWaitingModal(myName) {
     const list = data.list || [];
     const idx = list.findIndex(n => n === myName);
     posEl.textContent = idx >= 0 ? idx + 1 : "-";
+    if (totalEl) totalEl.textContent = list.length;
     if (data.allowed === myName) {
       const ok = await showAppModal({
         title: "Konfirmasi",
@@ -759,6 +789,7 @@ function showWaitingModal(myName) {
         roomUnsub();
         queueUnsub();
         if (timerInterval) clearInterval(timerInterval);
+        if (iconInterval) clearInterval(iconInterval);
         modal.style.display = "none";
         sessionStorage.setItem("calleeName", myName);
         startCall(myName);
@@ -848,12 +879,8 @@ function monitorConnectionStatus() {
     } else {
       if (!snapshot.empty) {
         if (el) el.textContent = "Terkoneksi";
-        if (!wasCallerConnected) {
-          fetchOrCreateCallStartTime().then(startCallTimer);
-          wasCallerConnected = true;
-        }
+        wasCallerConnected = true;
       } else if (snapshot.empty && wasCallerConnected) {
-        stopCallTimer();
         wasCallerConnected = false;
       }
     }
@@ -879,11 +906,10 @@ function monitorConnectionStatus() {
         });
 
         wasCalleeConnected = true;
-        fetchOrCreateCallStartTime().then(startCallTimer);
       } else if (snapshot.empty && wasCalleeConnected) {
-        wasCalleeConnected = false;
         const label = document.getElementById("calleeNameLabel");
         if (label) label.style.display = "none";
+        wasCalleeConnected = false;
         hangUp(false);
       }
     } else {
