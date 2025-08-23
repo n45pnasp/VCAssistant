@@ -320,8 +320,8 @@ async function initAfterAuth() {
       startBtn.disabled = false;
       startBtn.addEventListener("click", () => startCall());
     } else {
-      await alertModal("Customer Service belum memulai panggilan. Silakan coba lagi nanti.", "Belum Tersedia");
-      location.href = PAGES.thanks;
+      location.href = PAGES.busy;
+      return;
     }
   } else {
     const data = roomSnap.data();
@@ -345,7 +345,7 @@ async function initAfterAuth() {
         });
         if (join) {
           await addToQueue(name);
-          location.href = `${PAGES.busy}?name=${encodeURIComponent(name)}`;
+          showWaitingModal(name);
         } else {
           location.href = PAGES.thanks;
         }
@@ -360,6 +360,7 @@ async function initAfterAuth() {
           return;
         }
         sessionStorage.setItem("calleeName", name);
+        sessionStorage.setItem("queueName", name);
         const qSnap = await getDoc(doc(db, "queues", ROOM_ID));
         const qData = qSnap.data() || {};
         const allowed = qData.allowed;
@@ -367,7 +368,7 @@ async function initAfterAuth() {
         if ((allowed && allowed !== name) || (!allowed && list.length > 0)) {
           await addToQueue(name);
           await alertModal("Maaf, Anda belum mendapat giliran.", "Sedang Menunggu");
-          location.href = `${PAGES.busy}?name=${encodeURIComponent(name)}`;
+          showWaitingModal(name);
           return;
         }
         startCall(name).catch(async err => {
@@ -697,6 +698,81 @@ function stopCallTimer() {
 async function addToQueue(name) {
   const qRef = doc(db, "queues", ROOM_ID);
   await setDoc(qRef, { list: arrayUnion(name) }, { merge: true });
+}
+
+function showWaitingModal(myName) {
+  const modal = document.getElementById("waitingModal");
+  if (!modal) return;
+  modal.style.display = "flex";
+
+  const timerEl = document.getElementById("waitTimer");
+  const posEl = document.getElementById("waitPosition");
+  let startTime = null;
+  let timerInterval = null;
+  let oneMinuteWarningShown = false;
+
+  const roomUnsub = onSnapshot(doc(db, "rooms", ROOM_ID), snap => {
+    startTime = snap.data()?.callStartTime || null;
+    if (startTime) {
+      if (!timerInterval) timerInterval = setInterval(updateTimer, 1000);
+      updateTimer();
+    } else {
+      oneMinuteWarningShown = false;
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      timerEl.textContent = "00:00";
+    }
+  });
+
+  const queueUnsub = onSnapshot(doc(db, "queues", ROOM_ID), async snap => {
+    const data = snap.data() || {};
+    const list = data.list || [];
+    const idx = list.findIndex(n => n === myName);
+    posEl.textContent = idx >= 0 ? idx + 1 : "-";
+    if (data.allowed === myName) {
+      const ok = await showAppModal({
+        title: "Konfirmasi",
+        message: "anda dipersilahkan masuk, bersedia?",
+        okText: "Ya",
+        cancelText: "Tidak"
+      });
+      if (ok) {
+        roomUnsub();
+        queueUnsub();
+        if (timerInterval) clearInterval(timerInterval);
+        modal.style.display = "none";
+        sessionStorage.setItem("calleeName", myName);
+        startCall(myName);
+      } else {
+        await updateDoc(doc(db, "queues", ROOM_ID), {
+          allowed: deleteField(),
+          list: arrayUnion(myName)
+        });
+      }
+    }
+  });
+
+  function updateTimer() {
+    if (!startTime) return;
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const remaining = MAX_CALL_DURATION_SEC - elapsed;
+    const m = String(Math.floor(elapsed / 60)).padStart(2, "0");
+    const s = String(elapsed % 60).padStart(2, "0");
+    timerEl.textContent = `${m}:${s}`;
+    if (remaining <= 60 && remaining > 0 && !oneMinuteWarningShown) {
+      oneMinuteWarningShown = true;
+      alert("Panggilan akan berakhir dalam 1 menit.");
+    }
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      startTime = null;
+      oneMinuteWarningShown = false;
+      timerEl.textContent = "00:00";
+    }
+  }
 }
 
 function listenQueueForCaller() {
