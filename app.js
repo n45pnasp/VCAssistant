@@ -744,22 +744,31 @@ function showWaitingModal(myName) {
   let startTime = null;
   let timerInterval = null;
   let oneMinuteWarningShown = false;
-  let iconInterval = null;
+  let iconTimeout = null;
   let icons = [];
   let iconIdx = 0;
+
+  function rotateIcon() {
+    if (!icons.length || !iconEl) return;
+    const { file, duration } = icons[iconIdx];
+    iconEl.src = `./icons/${file}`;
+    iconIdx = (iconIdx + 1) % icons.length;
+    iconTimeout = setTimeout(rotateIcon, duration);
+  }
 
   if (iconEl) {
     fetch("./icons/")
       .then(r => r.text())
       .then(html => {
-        icons = [...html.matchAll(/href="([^"]+\.(?:png|jpe?g|svg|gif))"/g)].map(m => m[1]);
-        if (icons.length) {
-          iconEl.src = `./icons/${icons[0]}`;
-          iconInterval = setInterval(() => {
-            iconIdx = (iconIdx + 1) % icons.length;
-            iconEl.src = `./icons/${icons[iconIdx]}`;
-          }, 3000);
-        }
+        icons = [...html.matchAll(/href="([^"]+\.(?:png|jpe?g|svg|gif))"/g)].map(m => m[1])
+          .map(file => {
+            const m = file.match(/(.+?)_(\d+)s\.(png|jpe?g|svg|gif)$/);
+            return {
+              file,
+              duration: m ? parseInt(m[2], 10) * 1000 : 3000
+            };
+          });
+        if (icons.length) rotateIcon();
       })
       .catch(err => console.warn("Gagal memuat ikon:", err));
   }
@@ -796,7 +805,7 @@ function showWaitingModal(myName) {
         roomUnsub();
         queueUnsub();
         if (timerInterval) clearInterval(timerInterval);
-        if (iconInterval) clearInterval(iconInterval);
+        if (iconTimeout) { clearTimeout(iconTimeout); iconTimeout = null; }
         modal.style.display = "none";
         sessionStorage.setItem("calleeName", myName);
         startCall(myName);
