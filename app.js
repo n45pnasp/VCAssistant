@@ -601,6 +601,8 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
 
 // ==================== MODAL NAMA CALLEE ====================
 function showNameInputModal() {
+  const loadingEl = document.getElementById("loading");
+  if (loadingEl) loadingEl.style.display = "none";
   return new Promise((resolve) => {
     const modal = document.getElementById("nameModal");
     const input = document.getElementById("calleeNameInput");
