@@ -312,25 +312,29 @@ async function initAfterAuth() {
   });
 
   const roomSnap = await getDoc(doc(db, "rooms", ROOM_ID));
+  const data = roomSnap.data() || {};
 
-  if (!roomSnap.exists()) {
-    // Room belum dibuat oleh CS
-    if (IS_CALLER_PAGE && startBtn) {
-      startBtn.style.display = "inline-block";
+  // ===== Setup tombol call untuk caller =====
+  if (IS_CALLER_PAGE && startBtn) {
+    startBtn.style.display = "inline-block";
+    // Hanya nonaktif jika sudah ada offer aktif (panggilan sedang berjalan)
+    if (!data.offer) {
       startBtn.disabled = false;
       startBtn.addEventListener("click", () => startCall());
     } else {
+      startBtn.disabled = true;
+    }
+  }
+
+  if (!roomSnap.exists()) {
+    // Room belum dibuat oleh CS dan ini bukan halaman caller
+    if (!IS_CALLER_PAGE) {
       await alertModal("Customer belum melayani", "Info");
       location.href = PAGES.busy;
       return;
     }
   } else {
-    const data = roomSnap.data();
-
-    if (IS_CALLER_PAGE && startBtn) {
-      startBtn.style.display = "inline-block";
-      startBtn.disabled = true; // room sudah ada, menunggu callee
-    }
+    // Room sudah ada
 
     if (data?.offer && data?.answer) {
       // Sedang melayani pelanggan lain
@@ -582,7 +586,8 @@ async function startCall(calleeNameFromInit = null, forceCaller = false) {
   } finally {
     showLoading(false);
     const startBtn = document.querySelector("#startCallBtn");
-    if (startBtn) startBtn.disabled = true;
+    // Nonaktifkan tombol hanya jika koneksi berhasil dibuat
+    if (startBtn) startBtn.disabled = !!peerConnection;
     updateButtonStates();
   }
 }
