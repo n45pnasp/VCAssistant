@@ -365,9 +365,8 @@ async function initAfterAuth() {
     }
 
     if (data?.offer && !data?.answer) {
-      // Ada offer → callee boleh join
+      // Ada offer → callee boleh join tanpa antrian
       if (!isCallerPage) {
-        await showQueueModal(1, 1);
         const name = await showNameInputModal();
         if (!name || name.trim() === "") {
           await alertModal("Nama wajib diisi untuk bergabung ke panggilan.", "Nama Diperlukan");
@@ -380,6 +379,7 @@ async function initAfterAuth() {
         });
       }
     } else {
+      await showQueueModal(1, 1);
       await alertModal("Maaf, kami sedang melayani pelanggan lain saat ini.", "Sedang Sibuk");
       location.href = PAGES.busy;
     }

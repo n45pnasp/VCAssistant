@@ -201,7 +201,8 @@ body {
 }
 
 #queueImage {
-  width: 80px;
+  width: 80%;
+  max-width: 200px;
   height: auto;
   margin: 10px auto;
   display: block;
