@@ -316,7 +316,7 @@ async function initAfterAuth() {
     if (isCallerPage && startBtn) {
       startBtn.style.display = "inline-block";
       startBtn.disabled = false;
-      startBtn.addEventListener("click", startCall);
+      startBtn.addEventListener("click", () => startCall());
     } else {
       await alertModal("Customer Service belum memulai panggilan. Silakan coba lagi nanti.", "Belum Tersedia");
       location.href = PAGES.thanks;
@@ -383,7 +383,7 @@ async function initAfterAuth() {
 }
 
 // ==================== START CALL ====================
-async function startCall(calleeNameFromInit = null) {
+async function startCall(calleeNameFromInit = null, forceCaller = false) {
   try {
     showLoading(true);
 
@@ -439,7 +439,7 @@ async function startCall(calleeNameFromInit = null) {
     // ============================================================
     monitorConnectionStatus();
 
-    if (!roomSnap.exists()) {
+    if (!roomSnap.exists() || forceCaller) {
       // ===== CALLER flow =====
       isCaller = true;
 
@@ -722,7 +722,7 @@ async function allowCallee(name) {
       await alertModal("Tidak ada antrian.");
       return;
     }
-    await startCall();
+    await startCall(null, true);
     await updateDoc(qRef, {
       list: arrayRemove(target),
       allowed: target,
