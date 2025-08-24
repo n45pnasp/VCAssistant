@@ -318,11 +318,6 @@ body {
   }
 }
 
-
-
-
-
-
 /* ===== LOADING OVERLAY ===== */
 .loading-overlay {
   position: fixed;
@@ -447,30 +442,154 @@ body.maaf-page #footerNote { color: #999; } /* match original maaf.html */
 /* ---------- Survei page ---------- */
 body.survei-page {
   font-family: 'Roboto', sans-serif;
-  background: #f5f5f5; color: #333333;
-  padding: 40px 20px; text-align: center;
+  background: #f5f5f5;
+  color: #333333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  text-align: center;
+  /* override global overflow untuk bisa scroll di mobile */
+  overflow: auto;
+}
+
+.survei-page #logo img {
+  width: 110px;
+  opacity: 0.9;
+  margin-bottom: 20px;
+}
+
+.survei-container {
+  width: 100%;
+  max-width: 420px;
 }
 
 .survei-form {
-  max-width: 400px; margin: 0 auto; background: #ffffff;
-  padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: #ffffff;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+
+.survei-form .form-group {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .survei-form label {
-  display: block; text-align: left; margin: 15px 0 5px; font-size:14px;
+  font-size: 14px;
+  font-weight: 500;
 }
+
 .survei-form input[type="text"],
-.survei-form textarea,
-.survei-form select {
-  width: 100%; padding: 8px; border:1px solid #ccc; border-radius:4px;
-  font-size:14px;
+.survei-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
+
+.survei-form textarea {
+  resize: vertical;
+}
+
+.survei-form input[type="text"]:focus,
+.survei-form textarea:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14,165,233,0.2);
+}
+
+.rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: center;
+  gap: 5px;
+}
+
+.rating input {
+  display: none;
+}
+
+.rating label {
+  font-size: 24px;
+  color: #ccc;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {
+  color: #ffc107;
+}
+
 .survei-form button {
-  margin-top:20px; padding:10px 20px; background:#0ea5e9; color:#fff;
-  border:none; border-radius:6px; cursor:pointer; font-weight:500;
+  width: 100%;
+  padding: 12px 0;
+  background: linear-gradient(90deg, #0ea5e9, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.3s;
 }
-.survei-message {
-  margin-top:20px; font-size:14px; color:#28a745; display:none;
+
+.survei-form button:hover {
+  opacity: 0.9;
 }
+
+.thank-you {
+  display: none;
+  margin-top: 20px;
+  background: #ffffff;
+  padding: 28px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.thank-you .icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+/* ===== Survey submit button spinner (ADDED) ===== */
+.survei-form .btn-submit{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.survei-form .btn-submit[disabled]{
+  opacity: .8;
+  cursor: not-allowed;
+}
+
+.survei-form .btn-spinner{
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: none;
+  animation: spin .8s linear infinite; /* reuse global @keyframes spin */
+}
+
+.survei-form .btn-submit.loading .btn-spinner{ display: inline-block; }
+.survei-form .btn-submit.loading .btn-label{ opacity: .75; }
 
 /* ---------- Close page (close.html) ---------- */
 body.close-page {
