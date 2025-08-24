@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto&display=swap">
   <link rel="stylesheet" href="./main.css">
 </head>
-<body class="survei-page">
+<body class="simple-page survei-page">
   <div class="survei-container">
     <div id="logo">
       <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
@@ -16,21 +16,27 @@
     <p>Kami ingin mendengar pendapat Anda tentang layanan kami.</p>
 
     <form id="survey-form" class="survei-form">
-      <label for="nama">Nama (opsional)</label>
-      <input type="text" id="nama" name="nama" placeholder="Nama Anda" />
+      <div class="form-group">
+        <label for="nama">Nama (opsional)</label>
+        <input type="text" id="nama" name="nama" placeholder="Nama Anda" />
+      </div>
 
-    <label for="rating">Penilaian Layanan</label>
-    <select id="rating" name="rating" required>
-      <option value="">Pilih rating</option>
-      <option value="1">1 - Sangat Buruk</option>
-      <option value="2">2</option>
-      <option value="3">3</option>
-      <option value="4">4</option>
-      <option value="5">5 - Sangat Baik</option>
-    </select>
+      <div class="form-group">
+        <label for="rating">Penilaian Layanan</label>
+        <select id="rating" name="rating" required>
+          <option value="">Pilih rating</option>
+          <option value="1">1 - Sangat Buruk</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5 - Sangat Baik</option>
+        </select>
+      </div>
 
-    <label for="pesan">Saran / Masukan</label>
-    <textarea id="pesan" name="pesan" rows="4" placeholder="Tulis masukan Anda" required></textarea>
+      <div class="form-group">
+        <label for="pesan">Saran / Masukan</label>
+        <textarea id="pesan" name="pesan" rows="4" placeholder="Tulis masukan Anda" required></textarea>
+      </div>
 
       <button type="submit">Kirim</button>
       <div id="msg" class="survei-message">Terima kasih atas feedback Anda!</div>

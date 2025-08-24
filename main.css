@@ -451,25 +451,73 @@ body.survei-page {
   padding: 40px 20px; text-align: center;
 }
 
+.survei-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
 .survei-form {
-  max-width: 400px; margin: 0 auto; background: #ffffff;
-  padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: #ffffff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+
+.survei-form .form-group {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 .survei-form label {
-  display: block; text-align: left; margin: 15px 0 5px; font-size:14px;
+  font-size: 14px;
+  font-weight: 500;
 }
+
 .survei-form input[type="text"],
 .survei-form textarea,
 .survei-form select {
-  width: 100%; padding: 8px; border:1px solid #ccc; border-radius:4px;
-  font-size:14px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
+
+.survei-form input[type="text"]:focus,
+.survei-form textarea:focus,
+.survei-form select:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14,165,233,0.2);
+}
+
 .survei-form button {
-  margin-top:20px; padding:10px 20px; background:#0ea5e9; color:#fff;
-  border:none; border-radius:6px; cursor:pointer; font-weight:500;
+  width: 100%;
+  padding: 12px 0;
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.3s;
 }
+
+.survei-form button:hover {
+  background: #0284c7;
+}
+
 .survei-message {
-  margin-top:20px; font-size:14px; color:#28a745; display:none;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #28a745;
+  display: none;
 }
 
 /* ---------- Close page (close.html) ---------- */
