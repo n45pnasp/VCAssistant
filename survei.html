@@ -43,26 +43,28 @@
       </div>
 
       <button type="submit">Kirim</button>
-      <div id="msg" class="survei-message">Terima kasih atas feedback Anda!</div>
     </form>
+    <div id="thank-you" class="thank-you">
+      <div class="icon">🙏</div>
+      <p>Terima kasih atas feedback Anda!</p>
+    </div>
   </div>
 
   <script>
   const SPREADSHEET_ID = 'https://script.google.com/macros/s/AKfycbz3uAdo3IdPP2xvbHC6xei9TWwDbTsWf9g4rnVdboTw2Pfjpa7_GiVURTAKg-YLMRxb/exec'; // ganti dengan ID Spreadsheet Google
   const SCRIPT_URL = `https://script.google.com/macros/s/${SPREADSHEET_ID}/exec`;
   const form = document.getElementById('survey-form');
-  const msg = document.getElementById('msg');
+  const thankYou = document.getElementById('thank-you');
 
   form.addEventListener('submit', e => {
     e.preventDefault();
     fetch(SCRIPT_URL, { method: 'POST', body: new FormData(form) })
       .then(() => {
-        msg.style.display = 'block';
-        form.reset();
+        form.style.display = 'none';
+        thankYou.style.display = 'block';
       })
       .catch(() => {
-        msg.textContent = 'Terjadi kesalahan. Coba lagi.';
-        msg.style.display = 'block';
+        alert('Terjadi kesalahan. Coba lagi.');
       });
   });
   </script>
