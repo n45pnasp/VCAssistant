@@ -318,11 +318,6 @@ body {
   }
 }
 
-
-
-
-
-
 /* ===== LOADING OVERLAY ===== */
 .loading-overlay {
   position: fixed;
@@ -456,6 +451,8 @@ body.survei-page {
   min-height: 100vh;
   padding: 20px;
   text-align: center;
+  /* override global overflow untuk bisa scroll di mobile */
+  overflow: auto;
 }
 
 .survei-page #logo img {
@@ -567,6 +564,32 @@ body.survei-page {
   font-size: 48px;
   margin-bottom: 10px;
 }
+
+/* ===== Survey submit button spinner (ADDED) ===== */
+.survei-form .btn-submit{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.survei-form .btn-submit[disabled]{
+  opacity: .8;
+  cursor: not-allowed;
+}
+
+.survei-form .btn-spinner{
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  display: none;
+  animation: spin .8s linear infinite; /* reuse global @keyframes spin */
+}
+
+.survei-form .btn-submit.loading .btn-spinner{ display: inline-block; }
+.survei-form .btn-submit.loading .btn-label{ opacity: .75; }
 
 /* ---------- Close page (close.html) ---------- */
 body.close-page {
