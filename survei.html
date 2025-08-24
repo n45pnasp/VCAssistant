@@ -8,10 +8,10 @@
   <link rel="stylesheet" href="./main.css">
 </head>
 <body class="simple-page survei-page">
+  <div id="logo">
+    <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
+  </div>
   <div class="survei-container">
-    <div id="logo">
-      <img src="https://injourney.id/assets/airports-business-logo-bK5fIp14.png" alt="Logo InJourney">
-    </div>
     <h1>Survei Layanan AirTalk</h1>
     <p>Kami ingin mendengar pendapat Anda tentang layanan kami.</p>
 
@@ -21,16 +21,20 @@
         <input type="text" id="nama" name="nama" placeholder="Nama Anda" />
       </div>
 
-      <div class="form-group">
-        <label for="rating">Penilaian Layanan</label>
-        <select id="rating" name="rating" required>
-          <option value="">Pilih rating</option>
-          <option value="1">1 - Sangat Buruk</option>
-          <option value="2">2</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
-          <option value="5">5 - Sangat Baik</option>
-        </select>
+      <div class="form-group rating-group">
+        <label>Penilaian Layanan</label>
+        <div class="rating">
+          <input type="radio" id="star5" name="rating" value="5" required>
+          <label for="star5" title="Sangat Baik">&#9733;</label>
+          <input type="radio" id="star4" name="rating" value="4">
+          <label for="star4" title="Baik">&#9733;</label>
+          <input type="radio" id="star3" name="rating" value="3">
+          <label for="star3" title="Cukup">&#9733;</label>
+          <input type="radio" id="star2" name="rating" value="2">
+          <label for="star2" title="Kurang">&#9733;</label>
+          <input type="radio" id="star1" name="rating" value="1">
+          <label for="star1" title="Sangat Buruk">&#9733;</label>
+        </div>
       </div>
 
       <div class="form-group">
